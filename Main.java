@@ -1,5 +1,15 @@
+import javax.swing.*;
 public class Main {
     public static void main(String[] args) {
-        System.out.println("Hello, World!");
+        SwingUtilities.invokeLater(() -> {
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            
+            MainFrame mainFrame = new MainFrame();
+            mainFrame.setVisible(true);
+        });
     }
 }
