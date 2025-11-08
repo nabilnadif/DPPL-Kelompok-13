@@ -1,6 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
-import Admin.MainFrame;
+import Auth.AppFrame;
 
 public class Main {
     public static void main(String[] args) {
@@ -11,8 +11,8 @@ public class Main {
                 e.printStackTrace();
             }
 
-            MainFrame mainFrame = new MainFrame();
-            mainFrame.setVisible(true);
+            AppFrame appFrame = new AppFrame();
+            appFrame.setVisible(true);
         });
     }
 }

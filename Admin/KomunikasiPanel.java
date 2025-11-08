@@ -33,6 +33,9 @@ public class KomunikasiPanel extends JPanel {
         JPanel panelTombol = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         panelTombol.setOpaque(false);
         JButton btnTambah = new JButton("+ Buat Pengumuman");
+        btnTambah.setOpaque(true);
+        btnTambah.setBorderPainted(false);
+        btnTambah.setFocusPainted(false);
         btnTambah.setFont(MainFrame.FONT_BOLD);
         btnTambah.setBackground(MainFrame.WARNA_CARD_BG);
         btnTambah.setForeground(MainFrame.WARNA_TEKS_PUTIH);

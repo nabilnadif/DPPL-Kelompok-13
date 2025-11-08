@@ -76,6 +76,9 @@ public class KegiatanPage extends JPanel {
         JPanel panelTombol = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         panelTombol.setOpaque(false);
         JButton btnTambah = new JButton("+ Buat Proposal");
+        btnTambah.setOpaque(true);
+        btnTambah.setBorderPainted(false);
+        btnTambah.setFocusPainted(false);
         btnTambah.setFont(MainFrame.FONT_BOLD);
         btnTambah.setBackground(MainFrame.WARNA_CARD_BG);
         btnTambah.setForeground(MainFrame.WARNA_TEKS_PUTIH);
@@ -86,6 +89,9 @@ public class KegiatanPage extends JPanel {
         panelTombol.add(btnTambah);
 
         JButton btnUpdate = new JButton("Update Proposal");
+        btnUpdate.setOpaque(true);
+        btnUpdate.setBorderPainted(false);
+        btnUpdate.setFocusPainted(false);
         btnUpdate.setFont(MainFrame.FONT_BOLD);
         btnUpdate.addActionListener(e -> {
             int selectedRow = tabelKegiatan.getSelectedRow();
@@ -102,6 +108,9 @@ public class KegiatanPage extends JPanel {
         panelTombol.add(btnUpdate);
 
         JButton btnHapus = new JButton("Hapus Proposal");
+        btnHapus.setOpaque(true);
+        btnHapus.setBorderPainted(false);
+        btnHapus.setFocusPainted(false);
         btnHapus.setFont(MainFrame.FONT_BOLD);
         btnHapus.setBackground(new Color(220, 53, 69));
         btnHapus.setForeground(MainFrame.WARNA_TEKS_PUTIH);
@@ -137,6 +146,9 @@ public class KegiatanPage extends JPanel {
         tabelKegiatan.setRowSorter(sorterKegiatan);
 
         JButton btnCari = new JButton("Cari");
+        btnCari.setOpaque(true);
+        btnCari.setBorderPainted(false);
+        btnCari.setFocusPainted(false);
         btnCari.addActionListener(e -> {
             String teks = txtCari.getText();
             if (teks.equals("Pencarian kegiatan...") || teks.trim().length() == 0) {
@@ -198,6 +210,9 @@ public class KegiatanPage extends JPanel {
         JPanel panelTombol = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         panelTombol.setOpaque(false);
         btnSubmitKegiatan = new JButton("+ Tambah Proposal");
+        btnSubmitKegiatan.setOpaque(true);
+        btnSubmitKegiatan.setBorderPainted(false);
+        btnSubmitKegiatan.setFocusPainted(false);
         btnSubmitKegiatan.setFont(MainFrame.FONT_BOLD);
         btnSubmitKegiatan.setBackground(MainFrame.WARNA_CARD_BG);
         btnSubmitKegiatan.setForeground(MainFrame.WARNA_TEKS_PUTIH);
@@ -205,6 +220,9 @@ public class KegiatanPage extends JPanel {
         btnSubmitKegiatan.addActionListener(e -> submitForm());
 
         JButton btnBatal = new JButton("Batal");
+        btnBatal.setOpaque(true);
+        btnBatal.setBorderPainted(false);
+        btnBatal.setFocusPainted(false);
         btnBatal.setFont(MainFrame.FONT_BOLD);
         btnBatal.addActionListener(e -> {
             cardLayout.show(panelKontenHalaman, TAMPILAN_LIST);

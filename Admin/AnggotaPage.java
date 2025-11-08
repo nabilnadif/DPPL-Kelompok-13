@@ -68,6 +68,9 @@ public class AnggotaPage extends JPanel {
         panelTombol.setOpaque(false);
 
         JButton btnTambah = new JButton("+ Tambah Anggota");
+        btnTambah.setOpaque(true);
+        btnTambah.setBorderPainted(false);
+        btnTambah.setFocusPainted(false);
         btnTambah.setFont(MainFrame.FONT_BOLD);
         btnTambah.setBackground(MainFrame.WARNA_CARD_BG);
         btnTambah.setForeground(MainFrame.WARNA_TEKS_PUTIH);
@@ -78,6 +81,9 @@ public class AnggotaPage extends JPanel {
         panelTombol.add(btnTambah);
 
         JButton btnUpdate = new JButton("Update Anggota");
+        btnUpdate.setOpaque(true);
+        btnUpdate.setBorderPainted(false);
+        btnUpdate.setFocusPainted(false);
         btnUpdate.setFont(MainFrame.FONT_BOLD);
         btnUpdate.addActionListener(e -> {
             int selectedRow = tabelAnggota.getSelectedRow();
@@ -94,6 +100,9 @@ public class AnggotaPage extends JPanel {
         panelTombol.add(btnUpdate);
 
         JButton btnHapus = new JButton("Hapus Anggota");
+        btnHapus.setOpaque(true);
+        btnHapus.setBorderPainted(false);
+        btnHapus.setFocusPainted(false);
         btnHapus.setFont(MainFrame.FONT_BOLD);
         btnHapus.setBackground(new Color(220, 53, 69));
         btnHapus.setForeground(MainFrame.WARNA_TEKS_PUTIH);
@@ -130,6 +139,9 @@ public class AnggotaPage extends JPanel {
         tabelAnggota.setRowSorter(sorterAnggota);
 
         JButton btnCari = new JButton("Cari");
+        btnCari.setOpaque(true);
+        btnCari.setBorderPainted(false);
+        btnCari.setFocusPainted(false);
         btnCari.addActionListener(e -> {
             String teks = txtCari.getText();
             if (teks.equals("Pencarian data anggota...") || teks.trim().length() == 0) {
@@ -191,6 +203,9 @@ public class AnggotaPage extends JPanel {
         JPanel panelTombol = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         panelTombol.setOpaque(false);
         btnSubmitAnggota = new JButton("+ Tambah Anggota");
+        btnSubmitAnggota.setOpaque(true);
+        btnSubmitAnggota.setBorderPainted(false);
+        btnSubmitAnggota.setFocusPainted(false);
         btnSubmitAnggota.setFont(MainFrame.FONT_BOLD);
         btnSubmitAnggota.setBackground(MainFrame.WARNA_CARD_BG);
         btnSubmitAnggota.setForeground(MainFrame.WARNA_TEKS_PUTIH);
@@ -198,6 +213,9 @@ public class AnggotaPage extends JPanel {
         btnSubmitAnggota.addActionListener(e -> submitForm());
 
         JButton btnBatal = new JButton("Batal");
+        btnBatal.setOpaque(true);
+        btnBatal.setBorderPainted(false);
+        btnBatal.setFocusPainted(false);
         btnBatal.setFont(MainFrame.FONT_BOLD);
         btnBatal.addActionListener(e -> {
             cardLayout.show(panelKontenHalaman, TAMPILAN_LIST);

@@ -84,6 +84,9 @@ public class KeuanganPage extends JPanel {
         JPanel panelTombol = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         panelTombol.setOpaque(false);
         JButton btnTambah = new JButton("+ Pencatatan Baru");
+        btnTambah.setOpaque(true);
+        btnTambah.setBorderPainted(false);
+        btnTambah.setFocusPainted(false);
         btnTambah.setFont(MainFrame.FONT_BOLD);
         btnTambah.setBackground(MainFrame.WARNA_CARD_BG);
         btnTambah.setForeground(MainFrame.WARNA_TEKS_PUTIH);
@@ -94,6 +97,9 @@ public class KeuanganPage extends JPanel {
         panelTombol.add(btnTambah);
 
         JButton btnUpdate = new JButton("Update Catatan");
+        btnUpdate.setOpaque(true);
+        btnUpdate.setBorderPainted(false);
+        btnUpdate.setFocusPainted(false);
         btnUpdate.setFont(MainFrame.FONT_BOLD);
         btnUpdate.addActionListener(e -> {
             int selectedRow = tabelKeuangan.getSelectedRow();
@@ -110,6 +116,9 @@ public class KeuanganPage extends JPanel {
         panelTombol.add(btnUpdate);
 
         JButton btnHapus = new JButton("Hapus Catatan");
+        btnHapus.setOpaque(true);
+        btnHapus.setBorderPainted(false);
+        btnHapus.setFocusPainted(false);
         btnHapus.setFont(MainFrame.FONT_BOLD);
         btnHapus.setBackground(new Color(220, 53, 69));
         btnHapus.setForeground(MainFrame.WARNA_TEKS_PUTIH);
@@ -146,6 +155,9 @@ public class KeuanganPage extends JPanel {
         tabelKeuangan.setRowSorter(sorterKeuangan);
 
         JButton btnCari = new JButton("Cari");
+        btnCari.setOpaque(true);
+        btnCari.setBorderPainted(false);
+        btnCari.setFocusPainted(false);
         btnCari.addActionListener(e -> {
             String teks = txtCari.getText();
             if (teks.equals("Pencarian data keuangan...") || teks.trim().length() == 0) {
@@ -198,6 +210,9 @@ public class KeuanganPage extends JPanel {
         JPanel panelTombol = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         panelTombol.setOpaque(false);
         btnSubmitKeuangan = new JButton("+ Tambah Catatan");
+        btnSubmitKeuangan.setOpaque(true);
+        btnSubmitKeuangan.setBorderPainted(false);
+        btnSubmitKeuangan.setFocusPainted(false);
         btnSubmitKeuangan.setFont(MainFrame.FONT_BOLD);
         btnSubmitKeuangan.setBackground(MainFrame.WARNA_CARD_BG);
         btnSubmitKeuangan.setForeground(MainFrame.WARNA_TEKS_PUTIH);
@@ -205,6 +220,9 @@ public class KeuanganPage extends JPanel {
         btnSubmitKeuangan.addActionListener(e -> submitForm());
 
         JButton btnBatal = new JButton("Batal");
+        btnBatal.setOpaque(true);
+        btnBatal.setBorderPainted(false);
+        btnBatal.setFocusPainted(false);
         btnBatal.setFont(MainFrame.FONT_BOLD);
         btnBatal.addActionListener(e -> {
             cardLayout.show(panelKontenHalaman, TAMPILAN_LIST);
