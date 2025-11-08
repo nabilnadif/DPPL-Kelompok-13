@@ -1,3 +1,5 @@
+package Admin;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
@@ -80,7 +82,8 @@ public class AnggotaPage extends JPanel {
         btnUpdate.addActionListener(e -> {
             int selectedRow = tabelAnggota.getSelectedRow();
             if (selectedRow == -1) {
-                JOptionPane.showMessageDialog(this, "Pilih satu baris untuk di-update.", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Pilih satu baris untuk di-update.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
                 return;
             }
             int modelRow = tabelAnggota.convertRowIndexToModel(selectedRow);
@@ -89,7 +92,7 @@ public class AnggotaPage extends JPanel {
             cardLayout.show(panelKontenHalaman, TAMPILAN_FORM);
         });
         panelTombol.add(btnUpdate);
-        
+
         JButton btnHapus = new JButton("Hapus Anggota");
         btnHapus.setFont(MainFrame.FONT_BOLD);
         btnHapus.setBackground(new Color(220, 53, 69));
@@ -97,11 +100,13 @@ public class AnggotaPage extends JPanel {
         btnHapus.addActionListener(e -> {
             int selectedRow = tabelAnggota.getSelectedRow();
             if (selectedRow == -1) {
-                JOptionPane.showMessageDialog(this, "Pilih satu baris untuk dihapus.", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Pilih satu baris untuk dihapus.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
                 return;
             }
             int modelRow = tabelAnggota.convertRowIndexToModel(selectedRow);
-            int confirm = JOptionPane.showConfirmDialog(this, "Yakin hapus data?", "Konfirmasi Hapus", JOptionPane.YES_NO_OPTION);
+            int confirm = JOptionPane.showConfirmDialog(this, "Yakin hapus data?", "Konfirmasi Hapus",
+                    JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) {
                 modelAnggota.removeRow(modelRow);
                 onDataChanged.run();
@@ -114,7 +119,7 @@ public class AnggotaPage extends JPanel {
         JPanel panelCari = new JPanel(new BorderLayout(5, 5));
         panelCari.setOpaque(false);
         final JTextField txtCari = MainFrame.createSearchField("Pencarian data anggota...");
-        
+
         tabelAnggota = new JTable(modelAnggota);
         tabelAnggota.setFont(MainFrame.FONT_NORMAL);
         tabelAnggota.setRowHeight(30);
@@ -133,30 +138,29 @@ public class AnggotaPage extends JPanel {
                 sorterAnggota.setRowFilter(RowFilter.regexFilter("(?i)" + teks));
             }
         });
-        
+
         panelCari.add(txtCari, BorderLayout.CENTER);
         panelCari.add(btnCari, BorderLayout.EAST);
-        
+
         // Perubahan layout v9
         panelKontrol.add(panelCari, BorderLayout.CENTER);
         panelKontrol.setMaximumSize(new Dimension(Integer.MAX_VALUE, panelKontrol.getPreferredSize().height));
-        
+
         panelAtas.add(panelKontrol);
         panelKonten.add(panelAtas, BorderLayout.NORTH);
-        
+
         panelKonten.add(new JScrollPane(tabelAnggota), BorderLayout.CENTER);
-        
+
         panel.add(panelKonten, BorderLayout.CENTER);
         return panel;
     }
 
-    
     // Membuat panel yang berisi Formulir Tambah/Update
     private JPanel createFormPanel() {
         JPanel panel = new JPanel(new BorderLayout(20, 20));
         panel.setOpaque(false);
         panel.add(new HeaderPanel("Manajemen Anggota UKM"), BorderLayout.NORTH);
-        
+
         JPanel panelForm = new JPanel();
         panelForm.setLayout(new BoxLayout(panelForm, BoxLayout.Y_AXIS));
         panelForm.setOpaque(false);
@@ -167,7 +171,7 @@ public class AnggotaPage extends JPanel {
         txtAnggotaTelp = new JTextField();
         txtAnggotaEmail = new JTextField();
         passAnggota = new JPasswordField();
-        
+
         panelForm.add(MainFrame.buatLabelField("Nama Anggota *"));
         panelForm.add(txtAnggotaNama);
         panelForm.add(Box.createRigidArea(new Dimension(0, 15)));
@@ -190,9 +194,9 @@ public class AnggotaPage extends JPanel {
         btnSubmitAnggota.setFont(MainFrame.FONT_BOLD);
         btnSubmitAnggota.setBackground(MainFrame.WARNA_CARD_BG);
         btnSubmitAnggota.setForeground(MainFrame.WARNA_TEKS_PUTIH);
-        
+
         btnSubmitAnggota.addActionListener(e -> submitForm());
-        
+
         JButton btnBatal = new JButton("Batal");
         btnBatal.setFont(MainFrame.FONT_BOLD);
         btnBatal.addActionListener(e -> {
@@ -201,14 +205,14 @@ public class AnggotaPage extends JPanel {
 
         panelTombol.add(btnBatal);
         panelTombol.add(btnSubmitAnggota);
-        
+
         panelForm.add(panelTombol);
         panelForm.add(Box.createVerticalGlue());
 
         JPanel wrapperForm = new JPanel(new BorderLayout());
         wrapperForm.setOpaque(false);
         wrapperForm.add(panelForm, BorderLayout.NORTH);
-        
+
         panel.add(wrapperForm, BorderLayout.CENTER);
         return panel;
     }
@@ -220,13 +224,13 @@ public class AnggotaPage extends JPanel {
         }
 
         Object[] rowData = {
-            txtAnggotaNama.getText(),
-            txtAnggotaNIM.getText(),
-            txtAnggotaTelp.getText(),
-            txtAnggotaEmail.getText(),
-            "Aktif" // Status default
+                txtAnggotaNama.getText(),
+                txtAnggotaNIM.getText(),
+                txtAnggotaTelp.getText(),
+                txtAnggotaEmail.getText(),
+                "Aktif" // Status default
         };
-        
+
         if (isUpdateMode) {
             for (int i = 0; i < rowData.length; i++) {
                 modelAnggota.setValueAt(rowData[i], editingRowIndex, i);
@@ -236,7 +240,7 @@ public class AnggotaPage extends JPanel {
             modelAnggota.addRow(rowData);
             JOptionPane.showMessageDialog(this, "Anggota baru berhasil ditambahkan!");
         }
-        
+
         onDataChanged.run(); // Panggil callback untuk update total
         clearForm();
         cardLayout.show(panelKontenHalaman, TAMPILAN_LIST);
@@ -266,7 +270,7 @@ public class AnggotaPage extends JPanel {
         txtAnggotaEmail.setText("");
         passAnggota.setText("");
     }
-    
+
     // Inner class untuk Header Panel
     private class HeaderPanel extends JPanel {
         public HeaderPanel(String judulHalaman) {
@@ -279,10 +283,10 @@ public class AnggotaPage extends JPanel {
             add(lblJudul, BorderLayout.WEST);
             JPanel panelUser = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
             panelUser.setOpaque(false);
-            
+
             ImageIcon bellIcon = MainFrame.loadIcon("/icons/Bell.png", 24, 24);
             JLabel lblNotif = new JLabel(bellIcon);
-            
+
             JLabel lblUser = new JLabel("Gusti Panji W. [v]");
             lblUser.setFont(MainFrame.FONT_BOLD);
             panelUser.add(lblNotif);

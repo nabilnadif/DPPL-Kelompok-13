@@ -1,3 +1,5 @@
+package Admin;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
@@ -33,7 +35,7 @@ public class MainFrame extends JFrame {
     public static final String PANEL_KEUANGAN = "Keuangan UKM";
     public static final String PANEL_KEGIATAN = "Kegiatan UKM";
     public static final String PANEL_KOMUNIKASI = "Komunikasi UKM";
-    
+
     // Nama internal (untuk logika sidebar dan 'Page')
     public static final String PANEL_TAMBAH_ANGGOTA = "Tambah Anggota";
     public static final String PANEL_TAMBAH_KEUANGAN = "Tambah Catatan Keuangan";
@@ -78,7 +80,7 @@ public class MainFrame extends JFrame {
         tambahPanelKeKonten();
 
         getContentPane().add(panelKontenUtama, BorderLayout.CENTER);
-        
+
         setTombolSidebarAktif(PANEL_DASHBOARD);
 
         updateTotalAnggota();
@@ -87,39 +89,45 @@ public class MainFrame extends JFrame {
 
     private void initModels() {
         // Model Anggota
-        String[] kolomAnggota = {"Nama", "NIM", "Telepon", "Email", "Status"};
+        String[] kolomAnggota = { "Nama", "NIM", "Telepon", "Email", "Status" };
         Object[][] dataAnggota = {
-                {"M. Nabil Nadif", "2407112714", "0812...", "nabil@example.com", "Aktif"},
-                {"Qorri Adistya", "2107111517", "0813...", "qorri@example.com", "Aktif"},
-                {"Gusti Panji Widodo", "2407113145", "0814...", "gusti@example.com", "Non-Aktif"},
+                { "M. Nabil Nadif", "2407112714", "0812...", "nabil@example.com", "Aktif" },
+                { "Qorri Adistya", "2107111517", "0813...", "qorri@example.com", "Aktif" },
+                { "Gusti Panji Widodo", "2407113145", "0814...", "gusti@example.com", "Non-Aktif" },
         };
         modelAnggota = new DefaultTableModel(dataAnggota, kolomAnggota) {
             @Override
-            public boolean isCellEditable(int row, int column) { return false; }
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
         };
 
         // Model Keuangan
-        String[] kolomKeuangan = {"Nama Pencatatan", "Tipe", "Jumlah", "Pencatat"};
+        String[] kolomKeuangan = { "Nama Pencatatan", "Tipe", "Jumlah", "Pencatat" };
         Object[][] dataKeuangan = {
-                {"Dana sponsor", "Pemasukan", "+Rp. 500.000,-", "Admin 1"},
-                {"Gorengan acara", "Pengeluaran", "-Rp. 103.000,-", "Admin 2"},
-                {"Isi tinta printer", "Pengeluaran", "-Rp. 250.000,-", "Admin 1"},
+                { "Dana sponsor", "Pemasukan", "+Rp. 500.000,-", "Admin 1" },
+                { "Gorengan acara", "Pengeluaran", "-Rp. 103.000,-", "Admin 2" },
+                { "Isi tinta printer", "Pengeluaran", "-Rp. 250.000,-", "Admin 1" },
         };
         modelKeuangan = new DefaultTableModel(dataKeuangan, kolomKeuangan) {
             @Override
-            public boolean isCellEditable(int row, int column) { return false; }
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
         };
-        
+
         // Model Kegiatan
-        String[] kolomKegiatan = {"Nama Kegiatan", "Tipe", "Lokasi", "Pelaksanaan"};
+        String[] kolomKegiatan = { "Nama Kegiatan", "Tipe", "Lokasi", "Pelaksanaan" };
         Object[][] dataKegiatan = {
-                {"Futsal", "Outdoor", "Gg. Kamboja, Jl. Bang...", "12 November 2025"},
-                {"Sparing Futsal", "Outdoor", "Gg. Kamboja, Jl. Bang...", "15 November 2025"},
-                {"EXPO", "Hybrid", "Fakultas Teknik, UNRI", "15 November 2025"},
+                { "Futsal", "Outdoor", "Gg. Kamboja, Jl. Bang...", "12 November 2025" },
+                { "Sparing Futsal", "Outdoor", "Gg. Kamboja, Jl. Bang...", "15 November 2025" },
+                { "EXPO", "Hybrid", "Fakultas Teknik, UNRI", "15 November 2025" },
         };
         modelKegiatan = new DefaultTableModel(dataKegiatan, kolomKegiatan) {
             @Override
-            public boolean isCellEditable(int row, int column) { return false; }
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
         };
     }
 
@@ -140,7 +148,7 @@ public class MainFrame extends JFrame {
         panelKontenUtama.add(keuanganPage, PANEL_KEUANGAN);
         panelKontenUtama.add(new KegiatanPage(modelKegiatan), PANEL_KEGIATAN);
         panelKontenUtama.add(new KomunikasiPanel(this, cardLayout, panelKontenUtama), PANEL_KOMUNIKASI);
-        
+
         // Panel "Tambah" tidak lagi dikelola oleh CardLayout utama
     }
 
@@ -164,25 +172,25 @@ public class MainFrame extends JFrame {
         String iconPath = "/icons/";
         int iconSize = 20;
 
-        iconMap.put(PANEL_DASHBOARD, new ImageIcon[]{
-            loadIcon(iconPath + "Home (2).png", iconSize, iconSize),
-            loadIcon(iconPath + "Home(dark).png", iconSize, iconSize)
+        iconMap.put(PANEL_DASHBOARD, new ImageIcon[] {
+                loadIcon(iconPath + "Home (2).png", iconSize, iconSize),
+                loadIcon(iconPath + "Home(dark).png", iconSize, iconSize)
         });
-        iconMap.put(PANEL_ANGGOTA, new ImageIcon[]{
-            loadIcon(iconPath + "Anggota.png", iconSize, iconSize),
-            loadIcon(iconPath + "Anggota(dark).png", iconSize, iconSize)
+        iconMap.put(PANEL_ANGGOTA, new ImageIcon[] {
+                loadIcon(iconPath + "Anggota.png", iconSize, iconSize),
+                loadIcon(iconPath + "Anggota(dark).png", iconSize, iconSize)
         });
-        iconMap.put(PANEL_KEUANGAN, new ImageIcon[]{
-            loadIcon(iconPath + "Keuangan.png", iconSize, iconSize),
-            loadIcon(iconPath + "Keuangan(dark).png", iconSize, iconSize)
+        iconMap.put(PANEL_KEUANGAN, new ImageIcon[] {
+                loadIcon(iconPath + "Keuangan.png", iconSize, iconSize),
+                loadIcon(iconPath + "Keuangan(dark).png", iconSize, iconSize)
         });
-        iconMap.put(PANEL_KEGIATAN, new ImageIcon[]{
-            loadIcon(iconPath + "Kegiatan.png", iconSize, iconSize),
-            loadIcon(iconPath + "Kegiatan(dark).png", iconSize, iconSize)
+        iconMap.put(PANEL_KEGIATAN, new ImageIcon[] {
+                loadIcon(iconPath + "Kegiatan.png", iconSize, iconSize),
+                loadIcon(iconPath + "Kegiatan(dark).png", iconSize, iconSize)
         });
-        iconMap.put(PANEL_KOMUNIKASI, new ImageIcon[]{
-            loadIcon(iconPath + "Komunikasi.png", iconSize, iconSize),
-            loadIcon(iconPath + "Komunikasi(dark).png", iconSize, iconSize)
+        iconMap.put(PANEL_KOMUNIKASI, new ImageIcon[] {
+                loadIcon(iconPath + "Komunikasi.png", iconSize, iconSize),
+                loadIcon(iconPath + "Komunikasi(dark).png", iconSize, iconSize)
         });
 
         panelSidebar.add(buatTombolSidebar("Dashboard", PANEL_DASHBOARD, iconMap.get(PANEL_DASHBOARD)[0]));
@@ -201,7 +209,7 @@ public class MainFrame extends JFrame {
     private JButton buatTombolSidebar(String teks, String namaPanel, ImageIcon icon) {
         JButton tombol = new JButton(teks, icon);
         tombol.setIconTextGap(15);
-        
+
         tombol.setForeground(WARNA_TEKS_PUTIH);
         tombol.setBackground(WARNA_SIDEBAR_BG);
         tombol.setFont(FONT_BOLD);
@@ -221,21 +229,25 @@ public class MainFrame extends JFrame {
         tombolSidebar.put(namaPanel, tombol);
         return tombol;
     }
-    
+
     // Dibuat public agar bisa dipanggil oleh panel anak
     public void setTombolSidebarAktif(String namaPanel) {
         // Logika ini penting agar tombol sidebar tetap 'aktif'
         // meskipun kita berada di panel form internal.
         String panelAktif = namaPanel;
-        if (namaPanel.equals(PANEL_TAMBAH_ANGGOTA)) panelAktif = PANEL_ANGGOTA;
-        else if (namaPanel.equals(PANEL_TAMBAH_KEUANGAN)) panelAktif = PANEL_KEUANGAN;
-        else if (namaPanel.equals(PANEL_TAMBAH_KEGIATAN)) panelAktif = PANEL_KEGIATAN;
+        if (namaPanel.equals(PANEL_TAMBAH_ANGGOTA))
+            panelAktif = PANEL_ANGGOTA;
+        else if (namaPanel.equals(PANEL_TAMBAH_KEUANGAN))
+            panelAktif = PANEL_KEUANGAN;
+        else if (namaPanel.equals(PANEL_TAMBAH_KEGIATAN))
+            panelAktif = PANEL_KEGIATAN;
 
         for (String key : tombolSidebar.keySet()) {
             JButton tombol = tombolSidebar.get(key);
             ImageIcon[] icons = iconMap.get(key);
 
-            if (icons == null) continue;
+            if (icons == null)
+                continue;
 
             if (key.equals(panelAktif)) {
                 tombol.setBackground(WARNA_HIGHLIGHT);
@@ -256,14 +268,16 @@ public class MainFrame extends JFrame {
         long totalPemasukan = 0;
         long totalPengeluaran = 0;
 
-        if (modelKeuangan == null) return; 
-        
+        if (modelKeuangan == null)
+            return;
+
         for (int i = 0; i < modelKeuangan.getRowCount(); i++) {
             String tipe = modelKeuangan.getValueAt(i, 1).toString();
             String jumlahStr = modelKeuangan.getValueAt(i, 2).toString();
             try {
                 String cleanNumberStr = jumlahStr.replaceAll("[^\\d]", "");
-                if (cleanNumberStr.isEmpty()) continue;
+                if (cleanNumberStr.isEmpty())
+                    continue;
                 long value = Long.parseLong(cleanNumberStr);
                 if (tipe.equals("Pemasukan")) {
                     totalPemasukan += value;
@@ -288,7 +302,7 @@ public class MainFrame extends JFrame {
         int totalMember = 0;
         int anggotaAktif = 0;
 
-        if (modelAnggota != null) { 
+        if (modelAnggota != null) {
             totalMember = modelAnggota.getRowCount();
             for (int i = 0; i < totalMember; i++) {
                 String status = modelAnggota.getValueAt(i, 4).toString();
@@ -311,10 +325,14 @@ public class MainFrame extends JFrame {
         String formatted = String.format("%,d", displayValue).replace(",", ".");
 
         switch (type) {
-            case "Pemasukan": return "+Rp. " + formatted + ",-";
-            case "Pengeluaran": return "-Rp. " + formatted + ",-";
-            case "Balance": return (value < 0 ? "-Rp. " : "Rp. ") + formatted + ",-";
-            default: return "Rp. " + formatted + ",-";
+            case "Pemasukan":
+                return "+Rp. " + formatted + ",-";
+            case "Pengeluaran":
+                return "-Rp. " + formatted + ",-";
+            case "Balance":
+                return (value < 0 ? "-Rp. " : "Rp. ") + formatted + ",-";
+            default:
+                return "Rp. " + formatted + ",-";
         }
     }
 
@@ -329,7 +347,7 @@ public class MainFrame extends JFrame {
         JTextField searchField = new JTextField(placeholder);
         searchField.setForeground(WARNA_PLACEHOLDER);
         searchField.setFont(FONT_NORMAL);
-        
+
         searchField.addFocusListener(new FocusAdapter() {
             @Override
             public void focusGained(FocusEvent e) {
@@ -338,6 +356,7 @@ public class MainFrame extends JFrame {
                     searchField.setForeground(WARNA_TEKS_HITAM);
                 }
             }
+
             @Override
             public void focusLost(FocusEvent e) {
                 if (searchField.getText().isEmpty()) {
@@ -348,7 +367,7 @@ public class MainFrame extends JFrame {
         });
         return searchField;
     }
-    
+
     public static ImageIcon loadIcon(String path, int width, int height) {
         try {
             java.net.URL imgURL = MainFrame.class.getResource(path);

@@ -1,3 +1,5 @@
+package Admin;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -9,7 +11,7 @@ public class KomunikasiPanel extends JPanel {
         setBackground(MainFrame.WARNA_KONTEN_BG);
         setBorder(new EmptyBorder(20, 20, 20, 20));
         add(new HeaderPanel("Pengumuman Baru"), BorderLayout.NORTH);
-        
+
         JPanel panelForm = new JPanel();
         panelForm.setLayout(new BoxLayout(panelForm, BoxLayout.Y_AXIS));
         panelForm.setOpaque(false);
@@ -36,7 +38,7 @@ public class KomunikasiPanel extends JPanel {
         btnTambah.setForeground(MainFrame.WARNA_TEKS_PUTIH);
         btnTambah.setFocusPainted(false);
         btnTambah.setBorderPainted(false);
-        
+
         btnTambah.addActionListener(e -> {
             if (txtJudul.getText().isEmpty() || areaIsi.getText().isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Judul dan Isi wajib diisi.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -48,7 +50,7 @@ public class KomunikasiPanel extends JPanel {
             mainCardLayout.show(mainCardPanel, MainFrame.PANEL_DASHBOARD);
             mainFrame.setTombolSidebarAktif(MainFrame.PANEL_DASHBOARD);
         });
-        
+
         panelTombol.add(btnTambah);
         panelForm.add(panelTombol);
         panelForm.add(Box.createVerticalGlue());
@@ -56,14 +58,14 @@ public class KomunikasiPanel extends JPanel {
         JPanel wrapperForm = new JPanel(new BorderLayout());
         wrapperForm.setOpaque(false);
         wrapperForm.add(panelForm, BorderLayout.NORTH);
-        
+
         add(wrapperForm, BorderLayout.CENTER);
     }
 
     // =========================================================================
     // --- INNER CLASSES (Kopi) ---
     // =========================================================================
-    
+
     private class HeaderPanel extends JPanel {
         public HeaderPanel(String judulHalaman) {
             setLayout(new BorderLayout());
@@ -75,10 +77,10 @@ public class KomunikasiPanel extends JPanel {
             add(lblJudul, BorderLayout.WEST);
             JPanel panelUser = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
             panelUser.setOpaque(false);
-            
+
             ImageIcon bellIcon = MainFrame.loadIcon("/icons/Bell.png", 24, 24);
             JLabel lblNotif = new JLabel(bellIcon);
-            
+
             JLabel lblUser = new JLabel("Gusti Panji W. [v]");
             lblUser.setFont(MainFrame.FONT_BOLD);
             panelUser.add(lblNotif);

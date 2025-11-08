@@ -1,4 +1,7 @@
 import javax.swing.*;
+
+import Admin.MainFrame;
+
 public class Main {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
@@ -7,7 +10,7 @@ public class Main {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            
+
             MainFrame mainFrame = new MainFrame();
             mainFrame.setVisible(true);
         });

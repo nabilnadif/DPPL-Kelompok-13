@@ -1,3 +1,5 @@
+package Admin;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
@@ -52,7 +54,7 @@ public class KeuanganPage extends JPanel {
         JPanel panel = new JPanel(new BorderLayout(20, 20));
         panel.setOpaque(false);
         panel.add(new HeaderPanel("Manajemen Keuangan UKM"), BorderLayout.NORTH);
-        
+
         JPanel panelKonten = new JPanel(new BorderLayout(10, 10));
         panelKonten.setOpaque(false);
 
@@ -62,18 +64,18 @@ public class KeuanganPage extends JPanel {
 
         RoundedPanel panelKartu = new RoundedPanel(15, MainFrame.WARNA_CARD_BG);
         panelKartu.setLayout(new FlowLayout(FlowLayout.LEFT, 20, 20));
-        
+
         lblTotalKeuangan = new JLabel("Rp. 0,-");
         lblTotalPemasukan = new JLabel("+Rp. 0,-");
         lblTotalPengeluaran = new JLabel("-Rp. 0,-");
-        
+
         panelKartu.add(buatSubCardKeuangan("Keuangan UKM", lblTotalKeuangan));
         panelKartu.add(buatSubCardKeuangan("Pemasukan UKM", lblTotalPemasukan));
         panelKartu.add(buatSubCardKeuangan("Pengeluaran UKM", lblTotalPengeluaran));
-        
+
         panelKartu.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
         panelAtas.add(panelKartu);
-        
+
         panelAtas.add(Box.createRigidArea(new Dimension(0, 15)));
 
         JPanel panelKontrol = new JPanel(new BorderLayout(10, 10));
@@ -96,7 +98,8 @@ public class KeuanganPage extends JPanel {
         btnUpdate.addActionListener(e -> {
             int selectedRow = tabelKeuangan.getSelectedRow();
             if (selectedRow == -1) {
-                JOptionPane.showMessageDialog(this, "Pilih satu baris untuk di-update.", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Pilih satu baris untuk di-update.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
                 return;
             }
             int modelRow = tabelKeuangan.convertRowIndexToModel(selectedRow);
@@ -113,11 +116,13 @@ public class KeuanganPage extends JPanel {
         btnHapus.addActionListener(e -> {
             int selectedRow = tabelKeuangan.getSelectedRow();
             if (selectedRow == -1) {
-                JOptionPane.showMessageDialog(this, "Pilih satu baris untuk dihapus.", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Pilih satu baris untuk dihapus.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
                 return;
             }
             int modelRow = tabelKeuangan.convertRowIndexToModel(selectedRow);
-            int confirm = JOptionPane.showConfirmDialog(this, "Yakin hapus data?", "Konfirmasi Hapus", JOptionPane.YES_NO_OPTION);
+            int confirm = JOptionPane.showConfirmDialog(this, "Yakin hapus data?", "Konfirmasi Hapus",
+                    JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) {
                 modelKeuangan.removeRow(modelRow);
                 onDataChanged.run();
@@ -130,7 +135,7 @@ public class KeuanganPage extends JPanel {
         JPanel panelCari = new JPanel(new BorderLayout(5, 5));
         panelCari.setOpaque(false);
         final JTextField txtCari = MainFrame.createSearchField("Pencarian data keuangan...");
-        
+
         tabelKeuangan = new JTable(modelKeuangan);
         tabelKeuangan.setFont(MainFrame.FONT_NORMAL);
         tabelKeuangan.setRowHeight(30);
@@ -149,18 +154,18 @@ public class KeuanganPage extends JPanel {
                 sorterKeuangan.setRowFilter(RowFilter.regexFilter("(?i)" + teks));
             }
         });
-        
+
         panelCari.add(txtCari, BorderLayout.CENTER);
         panelCari.add(btnCari, BorderLayout.EAST);
-        
+
         panelKontrol.add(panelCari, BorderLayout.CENTER);
         panelKontrol.setMaximumSize(new Dimension(Integer.MAX_VALUE, panelKontrol.getPreferredSize().height));
 
         panelAtas.add(panelKontrol);
         panelKonten.add(panelAtas, BorderLayout.NORTH);
-        
+
         panelKonten.add(new JScrollPane(tabelKeuangan), BorderLayout.CENTER);
-        
+
         panel.add(panelKonten, BorderLayout.CENTER);
         return panel;
     }
@@ -169,7 +174,7 @@ public class KeuanganPage extends JPanel {
         JPanel panel = new JPanel(new BorderLayout(20, 20));
         panel.setOpaque(false);
         panel.add(new HeaderPanel("Manajemen Keuangan UKM"), BorderLayout.NORTH);
-        
+
         JPanel panelForm = new JPanel();
         panelForm.setLayout(new BoxLayout(panelForm, BoxLayout.Y_AXIS));
         panelForm.setOpaque(false);
@@ -177,7 +182,7 @@ public class KeuanganPage extends JPanel {
 
         txtKeuanganNama = new JTextField();
         txtKeuanganJumlah = new JTextField();
-        String[] tipe = {"-- Pilih salah satu --", "Pemasukan", "Pengeluaran"};
+        String[] tipe = { "-- Pilih salah satu --", "Pemasukan", "Pengeluaran" };
         comboKeuanganTipe = new JComboBox<>(tipe);
 
         panelForm.add(MainFrame.buatLabelField("Nama Catatan *"));
@@ -189,22 +194,22 @@ public class KeuanganPage extends JPanel {
         panelForm.add(MainFrame.buatLabelField("Jumlah * (cth: 100000)"));
         panelForm.add(txtKeuanganJumlah);
         panelForm.add(Box.createRigidArea(new Dimension(0, 20)));
-        
+
         JPanel panelTombol = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         panelTombol.setOpaque(false);
         btnSubmitKeuangan = new JButton("+ Tambah Catatan");
         btnSubmitKeuangan.setFont(MainFrame.FONT_BOLD);
         btnSubmitKeuangan.setBackground(MainFrame.WARNA_CARD_BG);
         btnSubmitKeuangan.setForeground(MainFrame.WARNA_TEKS_PUTIH);
-        
+
         btnSubmitKeuangan.addActionListener(e -> submitForm());
-        
+
         JButton btnBatal = new JButton("Batal");
         btnBatal.setFont(MainFrame.FONT_BOLD);
         btnBatal.addActionListener(e -> {
             cardLayout.show(panelKontenHalaman, TAMPILAN_LIST);
         });
-        
+
         panelTombol.add(btnBatal);
         panelTombol.add(btnSubmitKeuangan);
         panelForm.add(panelTombol);
@@ -213,14 +218,15 @@ public class KeuanganPage extends JPanel {
         JPanel wrapperForm = new JPanel(new BorderLayout());
         wrapperForm.setOpaque(false);
         wrapperForm.add(panelForm, BorderLayout.NORTH);
-        
+
         panel.add(wrapperForm, BorderLayout.CENTER);
         return panel;
     }
 
     private void submitForm() {
         if (txtKeuanganNama.getText().isEmpty() || comboKeuanganTipe.getSelectedIndex() == 0) {
-            JOptionPane.showMessageDialog(this, "Nama Catatan dan Tipe wajib diisi.", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Nama Catatan dan Tipe wajib diisi.", "Error",
+                    JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -232,16 +238,16 @@ public class KeuanganPage extends JPanel {
             JOptionPane.showMessageDialog(this, "Jumlah harus berupa angka.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        
+
         String jumlahFormatted = MainFrame.formatRupiah(jumlahLong, tipeCatatan);
-        
+
         Object[] rowData = {
-            txtKeuanganNama.getText(),
-            tipeCatatan,
-            jumlahFormatted,
-            "Admin 1"
+                txtKeuanganNama.getText(),
+                tipeCatatan,
+                jumlahFormatted,
+                "Admin 1"
         };
-        
+
         if (isUpdateMode) {
             for (int i = 0; i < rowData.length; i++) {
                 modelKeuangan.setValueAt(rowData[i], editingRowIndex, i);
@@ -270,7 +276,7 @@ public class KeuanganPage extends JPanel {
         txtKeuanganNama.setText(modelKeuangan.getValueAt(modelRow, 0).toString());
         comboKeuanganTipe.setSelectedItem(modelKeuangan.getValueAt(modelRow, 1).toString());
         String jumlah = modelKeuangan.getValueAt(modelRow, 2).toString()
-                            .replaceAll("[^\\d]", "");
+                .replaceAll("[^\\d]", "");
         txtKeuanganJumlah.setText(jumlah);
     }
 
@@ -284,7 +290,7 @@ public class KeuanganPage extends JPanel {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setOpaque(false);
-        
+
         JLabel lblJudul = new JLabel(judul);
         lblJudul.setFont(MainFrame.FONT_NORMAL);
         lblJudul.setForeground(MainFrame.WARNA_TEKS_PUTIH);
@@ -302,7 +308,6 @@ public class KeuanganPage extends JPanel {
         lblTotalKeuangan.setText(MainFrame.formatRupiah(totalBalance, "Balance"));
     }
 
-
     private class HeaderPanel extends JPanel {
         public HeaderPanel(String judulHalaman) {
             setLayout(new BorderLayout());
@@ -314,10 +319,10 @@ public class KeuanganPage extends JPanel {
             add(lblJudul, BorderLayout.WEST);
             JPanel panelUser = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
             panelUser.setOpaque(false);
-            
+
             ImageIcon bellIcon = MainFrame.loadIcon("/icons/Bell.png", 24, 24);
             JLabel lblNotif = new JLabel(bellIcon);
-            
+
             JLabel lblUser = new JLabel("Gusti Panji W.");
             lblUser.setFont(MainFrame.FONT_BOLD);
             panelUser.add(lblNotif);
@@ -329,12 +334,14 @@ public class KeuanganPage extends JPanel {
     private class RoundedPanel extends JPanel {
         private int cornerRadius;
         private Color backgroundColor;
+
         public RoundedPanel(int radius, Color bgColor) {
             super();
             this.cornerRadius = radius;
             this.backgroundColor = bgColor;
             setOpaque(false);
         }
+
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
