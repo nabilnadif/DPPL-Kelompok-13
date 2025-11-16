@@ -101,27 +101,23 @@ public class LoginPanel extends JPanel {
         String username = txtUsername.getText();
         String password = new String(txtPassword.getPassword());
 
-        // --- Logika Prototipe (Hardcoded) ---
-        // Ganti ini dengan logika database Anda nanti
-
         if (username.equalsIgnoreCase("admin") && password.equals("admin123")) {
             // Berhasil login sebagai Admin
             JOptionPane.showMessageDialog(this, "Login Admin Berhasil!");
-            new MainFrame().setVisible(true); // Buka Admin MainFrame
-            parentFrame.dispose(); // Tutup window login
+            new MainFrame().setVisible(true);
+            parentFrame.dispose();
 
-        } else if (username.equalsIgnoreCase("nabil") && password.equals("nabil123")) {
+        } else if (username.equalsIgnoreCase("peserta") && password.equals("peserta123")) {
             // Berhasil login sebagai Anggota
             JOptionPane.showMessageDialog(this, "Login Anggota Berhasil!");
             new MemberMainFrame().setVisible(true);
             parentFrame.dispose();
 
-        } else if (username.equalsIgnoreCase("qorri") && password.equals("qorri123")) {
+        } else if (username.equalsIgnoreCase("dosen") && password.equals("dosen123")) {
             // Berhasil login sebagai Dosen
-            JOptionPane.showMessageDialog(this, "Login Dosen Berhasil! (Frame Dosen belum dibuat)");
-            // new Dosen.MainFrame().setVisible(true); // Kode saat MainFrame Dosen sudah
-            // jadi
-            // parentFrame.dispose();
+            JOptionPane.showMessageDialog(this, "Login Dosen Berhasil!");
+            new Dosen.DosenMainFrame().setVisible(true);
+            parentFrame.dispose();
 
         } else {
             // Gagal login
