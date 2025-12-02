@@ -6,6 +6,13 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
+import java.beans.Statement;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import Utils.DatabaseHelper;
 
 public class KeuanganPage extends JPanel {
 
@@ -38,6 +45,37 @@ public class KeuanganPage extends JPanel {
         mainPanel.add(createList(), "LIST");
         mainPanel.add(createForm(), "FORM");
         add(mainPanel, BorderLayout.CENTER);
+
+        loadDataFromDB();
+    }
+
+    private void loadDataFromDB() {
+        model.setRowCount(0);
+        long totalMasuk = 0;
+        long totalKeluar = 0;
+
+        try (Connection conn = DatabaseHelper.connect();
+                java.sql.Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery("SELECT * FROM keuangan")) {
+
+            while (rs.next()) {
+                String nama = rs.getString("nama_transaksi");
+                String tipe = rs.getString("tipe");
+                long jumlah = rs.getLong("jumlah");
+                String pencatat = rs.getString("pencatat");
+
+                String fmt = MainFrame.formatRupiah(jumlah, tipe);
+                model.addRow(new Object[] { nama, tipe, fmt, pencatat });
+
+                if (tipe.equals("Pemasukan"))
+                    totalMasuk += jumlah;
+                else
+                    totalKeluar += jumlah;
+            }
+            updateTotalLabels(totalMasuk - totalKeluar, totalMasuk, totalKeluar);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     private JPanel createList() {
@@ -213,31 +251,43 @@ public class KeuanganPage extends JPanel {
         try {
             long amt = Long.parseLong(tAmount.getText());
             String type = cbType.getSelectedItem().toString();
-            String fmt = MainFrame.formatRupiah(amt, type);
-            Object[] row = { tName.getText(), type, fmt, "Admin 1" };
+            String nama = tName.getText();
 
-            if (isEdit) {
-                for (int i = 0; i < 4; i++)
-                    model.setValueAt(row[i], editRow, i);
-            } else
-                model.addRow(row);
+            try (Connection conn = DatabaseHelper.connect()) {
+                String sql = "INSERT INTO keuangan(nama_transaksi, tipe, jumlah, pencatat) VALUES(?,?,?,?)";
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                pstmt.setString(1, nama);
+                pstmt.setString(2, type);
+                pstmt.setLong(3, amt);
+                pstmt.setString(4, "Admin 1");
+                pstmt.executeUpdate();
 
-            updateCallback.run();
-            cardLayout.show(mainPanel, "LIST");
+                loadDataFromDB();
+                cardLayout.show(mainPanel, "LIST");
+            }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Jumlah harus angka!");
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
         }
     }
 
     private void deleteData() {
         int r = table.getSelectedRow();
-        if (r != -1) {
-            model.removeRow(table.convertRowIndexToModel(r));
-            updateCallback.run();
+        if (r == -1)
+            return;
+        String nama = table.getValueAt(r, 0).toString(); // Hapus by Nama
+
+        try (Connection conn = DatabaseHelper.connect()) {
+            String sql = "DELETE FROM keuangan WHERE nama_transaksi = ?";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, nama);
+            pstmt.executeUpdate();
+            loadDataFromDB();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
-    // --- METODE YANG HILANG SEBELUMNYA ---
+    // Pastikan metode ini ada
     public void updateTotalLabels(long balance, long income, long expense) {
         if (lblTotalKeuangan != null)
             lblTotalKeuangan.setText(MainFrame.formatRupiah(balance, "Balance"));

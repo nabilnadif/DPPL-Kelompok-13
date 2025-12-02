@@ -3,6 +3,11 @@ package Admin;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import Utils.DatabaseHelper;
 
 public class KomunikasiPanel extends JPanel {
 
@@ -44,9 +49,36 @@ public class KomunikasiPanel extends JPanel {
         JButton btnSend = MainFrame.createButton("Kirim Pengumuman", MainFrame.COL_PRIMARY);
         btnSend.setAlignmentX(Component.LEFT_ALIGNMENT);
         btnSend.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Terkirim!");
-            tSubject.setText("");
-            tBody.setText("");
+            String judul = tSubject.getText();
+            String isi = tBody.getText();
+
+            if (judul.isEmpty() || isi.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Judul dan isi pengumuman tidak boleh kosong!", "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Format tanggal
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            String tanggal = sdf.format(new java.util.Date());
+
+            // Simpan ke database
+            String sql = "INSERT INTO pengumuman(judul, isi, tanggal) VALUES(?, ?, ?)";
+            try (Connection conn = DatabaseHelper.connect();
+                    PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, judul);
+                pstmt.setString(2, isi);
+                pstmt.setString(3, tanggal);
+                pstmt.executeUpdate();
+
+                JOptionPane.showMessageDialog(this, "Pengumuman berhasil dikirim!");
+                tSubject.setText("");
+                tBody.setText("");
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Gagal mengirim pengumuman: " + ex.getMessage(), "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
         });
 
         card.add(btnSend);

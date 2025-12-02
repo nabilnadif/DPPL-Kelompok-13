@@ -12,7 +12,13 @@ public class DosenMainFrame extends JFrame {
     private JPanel main;
     private HashMap<String, JButton> btns = new HashMap<>();
 
-    public DosenMainFrame() {
+    private String username;
+    private String role;
+
+    public DosenMainFrame(String username, String role) {
+        this.username = username;
+        this.role = role;
+
         setTitle("Sistem UKM - Dosen Pembina");
         setSize(1200, 800);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -25,12 +31,29 @@ public class DosenMainFrame extends JFrame {
         sidebar.setPreferredSize(new Dimension(250, 0));
         sidebar.setBorder(new EmptyBorder(30, 20, 30, 20));
 
-        JLabel l = new JLabel("DOSEN PORTAL");
-        l.setFont(MainFrame.FONT_H2);
-        l.setForeground(Color.WHITE);
-        sidebar.add(l);
+        JLabel logo = new JLabel("DOSEN PORTAL");
+        logo.setFont(MainFrame.FONT_H2);
+        logo.setForeground(Color.WHITE);
+        sidebar.add(logo);
         sidebar.add(Box.createVerticalStrut(40));
 
+        // Tambahkan tombol logout
+        JButton btnLogout = MainFrame.createButton("Logout", MainFrame.COL_DANGER);
+        btnLogout.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        btnLogout.addActionListener(e -> handleLogout());
+        sidebar.add(Box.createVerticalGlue());
+        sidebar.add(btnLogout);
+
+        // Footer untuk nama user dan role
+        JLabel userFooter = new JLabel("Role: " + role + " | User: " + username);
+        userFooter.setForeground(MainFrame.COL_TEXT_MUTED);
+        userFooter.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        userFooter.setAlignmentX(Component.CENTER_ALIGNMENT);
+        sidebar.add(userFooter);
+
+        add(sidebar, BorderLayout.WEST);
+
+        // Konten utama
         cl = new CardLayout();
         main = new JPanel(cl);
         main.setBackground(MainFrame.COL_CONTENT_BG);
@@ -39,14 +62,7 @@ public class DosenMainFrame extends JFrame {
         main.add(new LaporanKeuanganPanel(), "Keu");
         main.add(new LaporanKegiatanPanel(), "Keg");
 
-        addMenu(sidebar, "Dashboard", "Dash", "/icons/Home (2).png");
-        addMenu(sidebar, "Laporan Keuangan", "Keu", "/icons/Keuangan.png");
-        addMenu(sidebar, "Laporan Kegiatan", "Keg", "/icons/Kegiatan.png");
-
-        sidebar.add(Box.createVerticalGlue());
-        add(sidebar, BorderLayout.WEST);
         add(main, BorderLayout.CENTER);
-
         setActive("Dash");
     }
 
@@ -80,6 +96,15 @@ public class DosenMainFrame extends JFrame {
                 b.setBackground(MainFrame.COL_SIDEBAR_BG);
                 b.setForeground(new Color(203, 213, 225));
             }
+        }
+    }
+
+    private void handleLogout() {
+        int confirm = JOptionPane.showConfirmDialog(this, "Apakah Anda yakin ingin logout?", "Konfirmasi Logout",
+                JOptionPane.YES_NO_OPTION);
+        if (confirm == JOptionPane.YES_OPTION) {
+            dispose(); // Tutup DosenMainFrame
+            new Auth.AppFrame().setVisible(true); // Kembali ke halaman login
         }
     }
 }

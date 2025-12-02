@@ -5,6 +5,11 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.text.SimpleDateFormat;
+import Utils.DatabaseHelper;
 
 public class DashboardPanel extends JPanel {
 
@@ -12,6 +17,7 @@ public class DashboardPanel extends JPanel {
     private MainFrame mainFrame;
     private CardLayout cl;
     private JPanel cp;
+    private JPanel schedulePanel; // Add this line
 
     public DashboardPanel(MainFrame mainFrame, CardLayout cl, JPanel cp) {
         this.mainFrame = mainFrame;
@@ -22,10 +28,10 @@ public class DashboardPanel extends JPanel {
         setBackground(MainFrame.COL_CONTENT_BG);
         setBorder(new EmptyBorder(30, 40, 30, 40));
 
-        // 1. Header
+        // Header
         add(createHeader(), BorderLayout.NORTH);
 
-        // 2. Content (Cards + Schedule)
+        // Content (Cards + Schedule)
         JPanel content = new JPanel();
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
         content.setOpaque(false);
@@ -49,18 +55,22 @@ public class DashboardPanel extends JPanel {
         content.add(cards);
         content.add(Box.createRigidArea(new Dimension(0, 30)));
 
-        // Schedule Section (Clean Look)
-        content.add(createScheduleSection());
+        // Schedule Section
+        schedulePanel = createScheduleSection();
+        content.add(schedulePanel);
 
         content.add(Box.createVerticalGlue());
         add(content, BorderLayout.CENTER);
+
+        // Load nearest schedule
+        loadNearestSchedule();
     }
 
     private JPanel createHeader() {
         JPanel p = new JPanel(new BorderLayout());
         p.setOpaque(false);
 
-        JLabel title = new JLabel("Selamat Pagi, Gusti!");
+        JLabel title = new JLabel("Selamat Pagi!");
         title.setFont(MainFrame.FONT_H1);
         title.setForeground(MainFrame.COL_TEXT_DARK);
 
@@ -74,12 +84,6 @@ public class DashboardPanel extends JPanel {
         text.add(sub);
 
         p.add(text, BorderLayout.WEST);
-
-        // Profile Badge
-        JLabel profile = new JLabel("Gusti Panji W.");
-        profile.setIcon(new ImageIcon(getClass().getResource("/icons/user.png")));
-        profile.setFont(MainFrame.FONT_BOLD);
-        p.add(profile, BorderLayout.EAST);
 
         return p;
     }
@@ -169,6 +173,11 @@ public class DashboardPanel extends JPanel {
     private void navigate(String panelName) {
         cl.show(cp, panelName);
         mainFrame.setTombolSidebarAktif(panelName);
+
+        // Refresh data di DashboardPanel setiap kali berpindah ke dashboard
+        if (panelName.equals(MainFrame.PANEL_DASHBOARD)) {
+            loadNearestSchedule(); // Panggil metode untuk memuat jadwal terbaru
+        }
     }
 
     public void updateKeuanganLabel(long bal) {
@@ -178,5 +187,57 @@ public class DashboardPanel extends JPanel {
     public void updateAnggotaLabels(int active, int total) {
         lblAktif.setText(active + " Orang");
         lblTotal.setText(total + " Orang");
+    }
+
+    private void loadNearestSchedule() {
+        String sql = "SELECT nama_kegiatan, tanggal FROM kegiatan ORDER BY tanggal ASC LIMIT 1";
+
+        try (Connection conn = DatabaseHelper.connect();
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                ResultSet rs = pstmt.executeQuery()) {
+
+            schedulePanel.removeAll(); // Bersihkan panel sebelum menambahkan konten baru
+
+            if (rs.next()) {
+                String namaKegiatan = rs.getString("nama_kegiatan");
+                String tanggal = rs.getString("tanggal");
+
+                // Format tanggal
+                SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); // Format sesuai dengan
+                                                                                            // database
+                SimpleDateFormat outputFormat = new SimpleDateFormat("EEEE, dd MMM yyyy • HH:mm"); // Format untuk
+                                                                                                   // ditampilkan
+                String formattedDate = outputFormat.format(inputFormat.parse(tanggal));
+
+                // Update UI
+                JLabel title = new JLabel(namaKegiatan);
+                title.setFont(new Font("Segoe UI", Font.BOLD, 16));
+                title.setForeground(MainFrame.COL_PRIMARY);
+
+                JLabel date = new JLabel(formattedDate);
+                date.setFont(MainFrame.FONT_BODY);
+
+                JPanel info = new JPanel(new GridLayout(2, 1));
+                info.setOpaque(false);
+                info.add(title);
+                info.add(date);
+
+                schedulePanel.add(info, BorderLayout.SOUTH);
+            } else {
+                // Jika tidak ada kegiatan
+                JLabel noSchedule = new JLabel("Tidak ada kegiatan yang dijadwalkan.");
+                noSchedule.setFont(new Font("Segoe UI", Font.ITALIC, 14));
+                noSchedule.setForeground(MainFrame.COL_TEXT_MUTED);
+                noSchedule.setHorizontalAlignment(SwingConstants.CENTER);
+
+                schedulePanel.add(noSchedule, BorderLayout.CENTER);
+            }
+
+            schedulePanel.revalidate();
+            schedulePanel.repaint();
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Gagal memuat jadwal terdekat: " + e.getMessage());
+        }
     }
 }

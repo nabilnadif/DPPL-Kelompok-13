@@ -3,11 +3,16 @@ package Auth;
 import Admin.MainFrame;
 import Member.MemberMainFrame;
 import Dosen.DosenMainFrame;
+import Utils.DatabaseHelper; // Import DB Helper
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
 public class LoginPanel extends JPanel {
 
@@ -25,7 +30,6 @@ public class LoginPanel extends JPanel {
         setLayout(new GridBagLayout());
         setBackground(MainFrame.COL_CONTENT_BG);
 
-        // Kartu Login (Putih di tengah)
         JPanel card = new JPanel();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBackground(Color.WHITE);
@@ -46,7 +50,7 @@ public class LoginPanel extends JPanel {
         tUser.setMaximumSize(new Dimension(300, 40));
 
         tPass = new JPasswordField();
-        tPass.putClientProperty("JTextField.placeholderText", "Password"); // Fitur FlatLaf
+        tPass.putClientProperty("JTextField.placeholderText", "Password");
         tPass.setFont(MainFrame.FONT_BODY);
         tPass.setMaximumSize(new Dimension(300, 40));
 
@@ -66,11 +70,10 @@ public class LoginPanel extends JPanel {
             }
         });
 
-        // Add components with spacing
         card.add(title);
         card.add(sub);
         card.add(Box.createVerticalStrut(30));
-        card.add(new JLabel("Username"));
+        card.add(new JLabel("Username/Email"));
         card.add(tUser);
         card.add(Box.createVerticalStrut(15));
         card.add(new JLabel("Password"));
@@ -87,17 +90,36 @@ public class LoginPanel extends JPanel {
         String u = tUser.getText();
         String p = new String(tPass.getPassword());
 
-        if (u.equalsIgnoreCase("admin") && p.equals("admin123")) {
-            new MainFrame().setVisible(true);
-            parentFrame.dispose();
-        } else if (u.equalsIgnoreCase("nabil") && p.equals("nabil123")) {
-            new MemberMainFrame().setVisible(true);
-            parentFrame.dispose();
-        } else if (u.equalsIgnoreCase("qorri") && p.equals("qorri123")) {
-            new DosenMainFrame().setVisible(true);
-            parentFrame.dispose();
-        } else {
-            JOptionPane.showMessageDialog(this, "Login Gagal!", "Error", JOptionPane.ERROR_MESSAGE);
+        String sql = "SELECT role, nama_lengkap FROM users WHERE username = ? AND password = ?";
+
+        try (Connection conn = DatabaseHelper.connect();
+                PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, u);
+            pstmt.setString(2, p);
+
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                String role = rs.getString("role");
+                String namaLengkap = rs.getString("nama_lengkap");
+                JOptionPane.showMessageDialog(this, "Login Berhasil sebagai " + role);
+
+                if (role.equalsIgnoreCase("Admin")) {
+                    new MainFrame(namaLengkap, role).setVisible(true);
+                } else if (role.equalsIgnoreCase("Anggota")) {
+                    new MemberMainFrame(namaLengkap, role).setVisible(true);
+                } else if (role.equalsIgnoreCase("Dosen")) {
+                    new DosenMainFrame(namaLengkap, role).setVisible(true);
+                }
+                parentFrame.dispose();
+            } else {
+                JOptionPane.showMessageDialog(this, "Username atau Password salah!", "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Database Error: " + e.getMessage());
         }
     }
 }

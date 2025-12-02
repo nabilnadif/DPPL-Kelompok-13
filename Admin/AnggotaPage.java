@@ -5,6 +5,13 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
+import java.beans.Statement;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import Utils.DatabaseHelper;
 
 public class AnggotaPage extends JPanel {
 
@@ -29,6 +36,8 @@ public class AnggotaPage extends JPanel {
         this.model = model;
         this.updateCallback = updateCallback;
 
+        loadDataFromDB();
+
         setLayout(new BorderLayout());
         setBackground(MainFrame.COL_CONTENT_BG);
 
@@ -37,6 +46,28 @@ public class AnggotaPage extends JPanel {
         mainPanel.add(createFormView(), "FORM");
 
         add(mainPanel, BorderLayout.CENTER);
+    }
+
+    private void loadDataFromDB() {
+        model.setRowCount(0); // Reset tabel
+        String sql = "SELECT * FROM anggota";
+        try (Connection conn = DatabaseHelper.connect();
+                java.sql.Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                model.addRow(new Object[] {
+                        rs.getString("nama"),
+                        rs.getString("nim"),
+                        rs.getString("telepon"),
+                        rs.getString("email"),
+                        rs.getString("status")
+                });
+            }
+            updateCallback.run(); // Update jumlah di dashboard
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     private JPanel createListView() {
@@ -60,6 +91,7 @@ public class AnggotaPage extends JPanel {
         JButton btnAdd = MainFrame.createButton("+ Tambah", MainFrame.COL_PRIMARY);
         JButton btnEdit = MainFrame.createButton("Edit", new Color(245, 158, 11)); // Amber
         JButton btnDel = MainFrame.createButton("Hapus", MainFrame.COL_DANGER);
+        JButton btnDetail = MainFrame.createButton("Detail", MainFrame.COL_PRIMARY);
 
         btnAdd.addActionListener(e -> openForm(false, -1));
         btnEdit.addActionListener(e -> {
@@ -68,10 +100,17 @@ public class AnggotaPage extends JPanel {
                 openForm(true, table.convertRowIndexToModel(row));
         });
         btnDel.addActionListener(e -> deleteData());
+        btnDetail.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row != -1) {
+                openDetailDialog(table.convertRowIndexToModel(row));
+            }
+        });
 
         btnPanel.add(btnAdd);
         btnPanel.add(btnEdit);
         btnPanel.add(btnDel);
+        btnPanel.add(btnDetail);
 
         // Search
         JTextField txtSearch = MainFrame.createSearchField("Cari nama/NIM...");
@@ -134,7 +173,6 @@ public class AnggotaPage extends JPanel {
         tNIM = new JTextField();
         tPhone = new JTextField();
         tEmail = new JTextField();
-        tPass = new JPasswordField();
 
         formCard.add(title);
         formCard.add(Box.createVerticalStrut(20));
@@ -143,7 +181,6 @@ public class AnggotaPage extends JPanel {
         addInput(formCard, "NIM", tNIM);
         addInput(formCard, "No. Telepon", tPhone);
         addInput(formCard, "Email", tEmail);
-        addInput(formCard, "Password", tPass);
 
         JPanel btnP = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         btnP.setBackground(Color.WHITE);
@@ -195,47 +232,191 @@ public class AnggotaPage extends JPanel {
             tNIM.setText("");
             tPhone.setText("");
             tEmail.setText("");
-            tPass.setText("");
         }
         cardLayout.show(mainPanel, "FORM");
     }
 
     private void saveData() {
-        if (tName.getText().isEmpty() || tNIM.getText().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Nama & NIM wajib diisi!");
+        // Validasi data kosong
+        if (tName.getText().isEmpty() || tNIM.getText().isEmpty() || tPhone.getText().isEmpty()
+                || tEmail.getText().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Semua data wajib diisi!", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        // Logika Cek Duplikat NIM
-        String inputNIM = tNIM.getText().trim();
-        for (int i = 0; i < model.getRowCount(); i++) {
-            if (isEdit && i == editRow)
-                continue;
-            if (model.getValueAt(i, 1).toString().equalsIgnoreCase(inputNIM)) {
-                JOptionPane.showMessageDialog(this, "NIM Sudah terdaftar!", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
+        String nama = tName.getText();
+        String nim = tNIM.getText();
+        String telp = tPhone.getText();
+        String email = tEmail.getText();
+
+        try (Connection conn = DatabaseHelper.connect()) {
+            if (!isEdit) {
+                // Cek apakah NIM sudah ada
+                String checkNimSql = "SELECT COUNT(*) FROM anggota WHERE nim = ?";
+                try (PreparedStatement checkNimStmt = conn.prepareStatement(checkNimSql)) {
+                    checkNimStmt.setString(1, nim);
+                    ResultSet rsNim = checkNimStmt.executeQuery();
+                    if (rsNim.next() && rsNim.getInt(1) > 0) {
+                        JOptionPane.showMessageDialog(this, "NIM sudah terdaftar!", "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                }
+
+                // Cek apakah email sudah ada
+                String checkEmailSql = "SELECT COUNT(*) FROM anggota WHERE email = ?";
+                try (PreparedStatement checkEmailStmt = conn.prepareStatement(checkEmailSql)) {
+                    checkEmailStmt.setString(1, email);
+                    ResultSet rsEmail = checkEmailStmt.executeQuery();
+                    if (rsEmail.next() && rsEmail.getInt(1) > 0) {
+                        JOptionPane.showMessageDialog(this, "Email sudah terdaftar!", "Error",
+                                JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                }
             }
-        }
 
-        Object[] row = { tName.getText(), inputNIM, tPhone.getText(), tEmail.getText(), "Aktif" };
+            if (isEdit) {
+                // Update
+                String sql = "UPDATE anggota SET nama=?, telepon=?, email=? WHERE nim=?";
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                pstmt.setString(1, nama);
+                pstmt.setString(2, telp);
+                pstmt.setString(3, email);
+                pstmt.setString(4, nim); // NIM jadi kunci (primary key logic)
+                pstmt.executeUpdate();
+            } else {
+                // Insert
+                String sql = "INSERT INTO anggota(nama, nim, telepon, email) VALUES(?,?,?,?)";
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                pstmt.setString(1, nama);
+                pstmt.setString(2, nim);
+                pstmt.setString(3, telp);
+                pstmt.setString(4, email);
+                pstmt.executeUpdate();
+            }
 
-        if (isEdit) {
-            for (int i = 0; i < row.length; i++)
-                model.setValueAt(row[i], editRow, i);
-        } else {
-            model.addRow(row);
+            loadDataFromDB(); // Refresh Tabel
+            cardLayout.show(mainPanel, "LIST");
+            JOptionPane.showMessageDialog(this, "Data Berhasil Disimpan!");
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
-        updateCallback.run();
-        cardLayout.show(mainPanel, "LIST");
     }
 
     private void deleteData() {
         int r = table.getSelectedRow();
         if (r == -1)
             return;
-        if (JOptionPane.showConfirmDialog(this, "Hapus data ini?", "Konfirmasi", JOptionPane.YES_NO_OPTION) == 0) {
-            model.removeRow(table.convertRowIndexToModel(r));
-            updateCallback.run();
+
+        String nim = table.getValueAt(r, 1).toString(); // Ambil NIM dari baris yg dipilih
+        String email = table.getValueAt(r, 3).toString(); // Ambil email dari baris yg dipilih
+
+        if (JOptionPane.showConfirmDialog(this, "Hapus anggota " + nim + "?", "Konfirmasi",
+                JOptionPane.YES_NO_OPTION) == 0) {
+            try (Connection conn = DatabaseHelper.connect()) {
+                // Hapus data anggota
+                String sqlDeleteAnggota = "DELETE FROM anggota WHERE nim = ?";
+                try (PreparedStatement pstmt = conn.prepareStatement(sqlDeleteAnggota)) {
+                    pstmt.setString(1, nim);
+                    pstmt.executeUpdate();
+                }
+
+                // Hapus akun pengguna terkait
+                String sqlDeleteUser = "DELETE FROM users WHERE username = ?";
+                try (PreparedStatement pstmt = conn.prepareStatement(sqlDeleteUser)) {
+                    pstmt.setString(1, email);
+                    pstmt.executeUpdate();
+                }
+
+                loadDataFromDB(); // Refresh tabel
+                JOptionPane.showMessageDialog(this, "Anggota dan akun terkait berhasil dihapus!");
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void openDetailDialog(int row) {
+        String nama = model.getValueAt(row, 0).toString();
+        String nim = model.getValueAt(row, 1).toString();
+        String telp = model.getValueAt(row, 2).toString();
+        String email = model.getValueAt(row, 3).toString();
+        String status = model.getValueAt(row, 4).toString();
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        panel.add(new JLabel("Nama: " + nama));
+        panel.add(new JLabel("NIM: " + nim));
+        panel.add(new JLabel("Telepon: " + telp));
+        panel.add(new JLabel("Email: " + email));
+        panel.add(new JLabel("Status: " + status));
+
+        // Tombol untuk mengaktifkan anggota
+        JButton btnActivate = new JButton("Aktifkan");
+        btnActivate.setEnabled(status.equals("Belum Aktif"));
+        btnActivate.addActionListener(e -> {
+            activateMember(nim, nama, email);
+            JOptionPane.showMessageDialog(this, "Anggota berhasil diaktifkan!");
+            loadDataFromDB(); // Refresh tabel
+        });
+
+        panel.add(Box.createVerticalStrut(10));
+        panel.add(btnActivate);
+
+        // Tombol untuk menampilkan password (hanya jika status Aktif)
+        if (status.equals("Aktif")) {
+            JButton btnShowPassword = new JButton("Tampilkan Password");
+            btnShowPassword.addActionListener(e -> {
+                String password = getPasswordForMember(email);
+                JOptionPane.showMessageDialog(this, "Password: " + password, "Password Anggota",
+                        JOptionPane.INFORMATION_MESSAGE);
+            });
+            panel.add(Box.createVerticalStrut(10));
+            panel.add(btnShowPassword);
+        }
+
+        JOptionPane.showMessageDialog(this, panel, "Detail Anggota", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private String getPasswordForMember(String email) {
+        String password = "";
+        try (Connection conn = DatabaseHelper.connect()) {
+            String sql = "SELECT password FROM users WHERE username = ?";
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, email);
+                ResultSet rs = pstmt.executeQuery();
+                if (rs.next()) {
+                    password = rs.getString("password");
+                }
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+        return password;
+    }
+
+    private void activateMember(String nim, String nama, String email) {
+        try (Connection conn = DatabaseHelper.connect()) {
+            // Update status anggota
+            String updateStatusSql = "UPDATE anggota SET status = 'Aktif' WHERE nim = ?";
+            try (PreparedStatement pstmt = conn.prepareStatement(updateStatusSql)) {
+                pstmt.setString(1, nim);
+                pstmt.executeUpdate();
+            }
+
+            // Buat akun login untuk anggota
+            String insertUserSql = "INSERT INTO users(username, password, role, nama_lengkap) VALUES(?, ?, ?, ?)";
+            try (PreparedStatement pstmt = conn.prepareStatement(insertUserSql)) {
+                pstmt.setString(1, email); // Email sebagai username
+                pstmt.setString(2, nim); // NIM sebagai password default
+                pstmt.setString(3, "Anggota");
+                pstmt.setString(4, nama);
+                pstmt.executeUpdate();
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

@@ -41,6 +41,8 @@ public class MainFrame extends JFrame {
     private CardLayout cardLayout;
     private Map<String, JButton> tombolSidebar = new HashMap<>();
     private Map<String, ImageIcon[]> iconMap = new HashMap<>();
+    private String username;
+    private String role;
 
     // Model Data
     private DefaultTableModel modelAnggota, modelKeuangan, modelKegiatan;
@@ -49,7 +51,10 @@ public class MainFrame extends JFrame {
     private DashboardPanel dashboardPanel;
     private KeuanganPage keuanganPage;
 
-    public MainFrame() {
+    public MainFrame(String username, String role) {
+        this.username = username;
+        this.role = role;
+
         setTitle("Sistem Pengelolaan UKM - Admin");
         setSize(1280, 800);
         setMinimumSize(new Dimension(1000, 700));
@@ -174,12 +179,34 @@ public class MainFrame extends JFrame {
 
         panelSidebar.add(Box.createVerticalGlue());
 
+        // Tambahkan Tombol Logout
+        // --- LOGOUT BUTTON (FIXED CENTERING) ---
+        JButton btnLogout = MainFrame.createButton("Logout", MainFrame.COL_DANGER);
+
+        // KUNCI PERBAIKAN: Jangan pakai MAX_VALUE, pakai ukuran tetap agar bisa
+        // ditengah
+        btnLogout.setMaximumSize(new Dimension(200, 40));
+        btnLogout.setPreferredSize(new Dimension(200, 40));
+        btnLogout.setAlignmentX(Component.CENTER_ALIGNMENT); // Wajib Center
+
+        btnLogout.addActionListener(e -> handleLogout());
+        panelSidebar.add(btnLogout);
+
         // Footer User (Centered)
-        JLabel userFooter = new JLabel("Admin: Gusti Panji");
-        userFooter.setForeground(COL_TEXT_MUTED);
+        JLabel userFooter = new JLabel("Role: " + role + " | User: " + username);
+        userFooter.setForeground(MainFrame.COL_TEXT_MUTED);
         userFooter.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        userFooter.setAlignmentX(Component.CENTER_ALIGNMENT); // Center
+        userFooter.setAlignmentX(Component.CENTER_ALIGNMENT);
         panelSidebar.add(userFooter);
+    }
+
+    private void handleLogout() {
+        int confirm = JOptionPane.showConfirmDialog(this, "Apakah Anda yakin ingin logout?", "Konfirmasi Logout",
+                JOptionPane.YES_NO_OPTION);
+        if (confirm == JOptionPane.YES_OPTION) {
+            dispose(); // Tutup MainFrame
+            new Auth.AppFrame().setVisible(true); // Kembali ke halaman login
+        }
     }
 
     private void addSidebarItem(String text, String key) {
@@ -217,6 +244,7 @@ public class MainFrame extends JFrame {
         btn.addActionListener(e -> {
             cardLayout.show(panelKontenUtama, key);
             setTombolSidebarAktif(key);
+
         });
 
         tombolSidebar.put(key, btn);

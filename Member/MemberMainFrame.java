@@ -2,6 +2,8 @@ package Member;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableModel;
+
 import java.awt.*;
 import java.util.HashMap;
 import Admin.MainFrame; // Reuse style constants
@@ -16,38 +18,76 @@ public class MemberMainFrame extends JFrame {
     private JPanel panelKontenUtama;
     private HashMap<String, JButton> sidebarBtns = new HashMap<>();
 
-    public MemberMainFrame() {
+    public MemberMainFrame(String username, String role) {
         setTitle("Sistem UKM - Anggota");
         setSize(1200, 800);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        // Setup Sidebar Modern
+        // --- SIDEBAR SETUP ---
         JPanel sidebar = new JPanel();
         sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
         sidebar.setBackground(MainFrame.COL_SIDEBAR_BG);
         sidebar.setPreferredSize(new Dimension(250, 0));
         sidebar.setBorder(new EmptyBorder(30, 20, 30, 20));
 
+        // 1. Logo (Centered)
         JLabel logo = new JLabel("MEMBER AREA");
         logo.setFont(MainFrame.FONT_H2);
         logo.setForeground(Color.WHITE);
+        logo.setAlignmentX(Component.CENTER_ALIGNMENT); // Wajib Center
         sidebar.add(logo);
         sidebar.add(Box.createVerticalStrut(40));
 
+        // --- MAIN CONTENT SETUP ---
         cardLayout = new CardLayout();
         panelKontenUtama = new JPanel(cardLayout);
         panelKontenUtama.setBackground(MainFrame.COL_CONTENT_BG);
 
         // Add Pages
-        panelKontenUtama.add(new DashboardPanel(), PANEL_DASHBOARD);
-        panelKontenUtama.add(new AbsensiPanel(), PANEL_ABSENSI);
-        panelKontenUtama.add(new PemberitahuanPanel(), PANEL_PEMBERITAHUAN);
+        AbsensiPanel absensiPanel = new AbsensiPanel(username);
+        DashboardPanel dashboardPanel = new DashboardPanel(username,
+                () -> absensiPanel.loadAbsensiData(new DefaultTableModel()));
 
-        // Sidebar Buttons
+        panelKontenUtama.add(dashboardPanel, PANEL_DASHBOARD);
+        panelKontenUtama.add(absensiPanel, PANEL_ABSENSI);
+        panelKontenUtama.add(new InboxPanel(), "Inbox");
+
+        // --- SIDEBAR MENU ---
         addMenu(sidebar, "Dashboard", PANEL_DASHBOARD, "/icons/Home (2).png");
         addMenu(sidebar, "Absensi", PANEL_ABSENSI, "/icons/Anggota.png");
-        addMenu(sidebar, "Pemberitahuan", PANEL_PEMBERITAHUAN, "/icons/Bell.png");
+        addMenu(sidebar, "Inbox", "Inbox", "/icons/bell-regular-full.png");
+
+        // Spacer untuk mendorong konten bawah ke dasar
+        sidebar.add(Box.createVerticalGlue());
+
+        // --- LOGOUT BUTTON (FIXED CENTERING) ---
+        JButton btnLogout = MainFrame.createButton("Logout", MainFrame.COL_DANGER);
+
+        // KUNCI PERBAIKAN: Jangan pakai MAX_VALUE, pakai ukuran tetap agar bisa
+        // ditengah
+        btnLogout.setMaximumSize(new Dimension(200, 40));
+        btnLogout.setPreferredSize(new Dimension(200, 40));
+        btnLogout.setAlignmentX(Component.CENTER_ALIGNMENT); // Wajib Center
+
+        btnLogout.addActionListener(e -> handleLogout());
+        sidebar.add(btnLogout);
+
+        // Spacer kecil antara tombol logout dan teks footer
+        sidebar.add(Box.createVerticalStrut(15));
+
+        // --- FOOTER USER INFO (FIXED CENTERING) ---
+        // Tidak perlu panel tambahan, langsung label saja agar alignment konsisten
+        JLabel userFooter = new JLabel("Role: " + role + " | User: " + username);
+        userFooter.setForeground(new Color(203, 213, 225));
+        userFooter.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        userFooter.setAlignmentX(Component.CENTER_ALIGNMENT); // Wajib Center
+        userFooter.setHorizontalAlignment(SwingConstants.CENTER); // Teks rata tengah
+
+        sidebar.add(userFooter);
+
+        // Padding bawah sedikit agar tidak mepet layar
+        sidebar.add(Box.createVerticalStrut(10));
 
         add(sidebar, BorderLayout.WEST);
         add(panelKontenUtama, BorderLayout.CENTER);
@@ -65,7 +105,12 @@ public class MemberMainFrame extends JFrame {
         btn.setFocusPainted(false);
         btn.setOpaque(true);
         btn.setBorderPainted(false);
-        btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
+
+        // Agar tombol menu rata tengah tapi teks rata kiri, kita gunakan trik:
+        // Set max width fix, dan alignment center
+        btn.setMaximumSize(new Dimension(210, 50));
+        btn.setAlignmentX(Component.CENTER_ALIGNMENT);
+
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         try {
@@ -73,11 +118,22 @@ public class MemberMainFrame extends JFrame {
             btn.setIcon(new ImageIcon(ic.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));
             btn.setIconTextGap(15);
         } catch (Exception e) {
+            // Icon not found handling
         }
 
         btn.addActionListener(e -> {
             cardLayout.show(panelKontenUtama, key);
             setActive(key);
+
+            if (key.equals(PANEL_ABSENSI)) {
+                // Pastikan komponen ada sebelum casting
+                for (Component comp : panelKontenUtama.getComponents()) {
+                    if (comp instanceof AbsensiPanel) {
+                        ((AbsensiPanel) comp).loadAbsensiData(new DefaultTableModel());
+                        break;
+                    }
+                }
+            }
         });
 
         sidebarBtns.put(key, btn);
@@ -95,6 +151,15 @@ public class MemberMainFrame extends JFrame {
                 b.setBackground(MainFrame.COL_SIDEBAR_BG);
                 b.setForeground(new Color(203, 213, 225));
             }
+        }
+    }
+
+    private void handleLogout() {
+        int confirm = JOptionPane.showConfirmDialog(this, "Apakah Anda yakin ingin logout?", "Konfirmasi Logout",
+                JOptionPane.YES_NO_OPTION);
+        if (confirm == JOptionPane.YES_OPTION) {
+            dispose(); // Tutup MemberMainFrame
+            new Auth.AppFrame().setVisible(true); // Kembali ke halaman login
         }
     }
 }

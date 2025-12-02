@@ -3,9 +3,13 @@ import com.formdev.flatlaf.FlatIntelliJLaf;
 import javax.swing.*;
 import java.awt.*;
 import Auth.AppFrame;
+import Utils.DatabaseHelper;
 
 public class Main {
     public static void main(String[] args) {
+
+        DatabaseHelper.initializeDatabase();
+
         SwingUtilities.invokeLater(() -> {
             try {
                 UIManager.setLookAndFeel(new FlatIntelliJLaf());
