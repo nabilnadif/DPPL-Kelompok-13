@@ -1,10 +1,8 @@
 package Auth;
 
-import Admin.MainFrame; // Kita butuh ini untuk membuka frame Admin
-// import Member.MainFrame; // (Nanti diimpor saat sudah dibuat)
-// import Dosen.MainFrame;  // (Nanti diimpor saat sudah dibuat)
+import Admin.MainFrame;
 import Member.MemberMainFrame;
-
+import Dosen.DosenMainFrame;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -16,113 +14,90 @@ public class LoginPanel extends JPanel {
     private JFrame parentFrame;
     private CardLayout cardLayout;
     private JPanel mainPanel;
+    private JTextField tUser;
+    private JPasswordField tPass;
 
-    private JTextField txtUsername;
-    private JPasswordField txtPassword;
-
-    public LoginPanel(JFrame parentFrame, CardLayout cardLayout, JPanel mainPanel) {
-        this.parentFrame = parentFrame;
-        this.cardLayout = cardLayout;
-        this.mainPanel = mainPanel;
+    public LoginPanel(JFrame frame, CardLayout cl, JPanel main) {
+        this.parentFrame = frame;
+        this.cardLayout = cl;
+        this.mainPanel = main;
 
         setLayout(new GridBagLayout());
-        setBackground(Color.WHITE);
-        setBorder(new EmptyBorder(40, 40, 40, 40));
+        setBackground(MainFrame.COL_CONTENT_BG);
 
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
-        gbc.gridwidth = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        // Kartu Login (Putih di tengah)
+        JPanel card = new JPanel();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(226, 232, 240), 1),
+                new EmptyBorder(40, 50, 40, 50)));
 
-        JLabel lblTitle = new JLabel("LOGIN SISTEM UKM");
-        lblTitle.setFont(new Font("Arial", Font.BOLD, 24));
-        lblTitle.setHorizontalAlignment(SwingConstants.CENTER);
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 2; // Span 2 kolom
-        add(lblTitle, gbc);
+        JLabel title = new JLabel("Selamat Datang");
+        title.setFont(MainFrame.FONT_H1);
+        title.setAlignmentX(CENTER_ALIGNMENT);
 
-        gbc.gridwidth = 1; // Reset
+        JLabel sub = new JLabel("Silakan login ke akun Anda");
+        sub.setFont(MainFrame.FONT_BODY);
+        sub.setForeground(MainFrame.COL_TEXT_MUTED);
+        sub.setAlignmentX(CENTER_ALIGNMENT);
 
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        add(new JLabel("Username/Email:"), gbc);
+        tUser = MainFrame.createSearchField("Username");
+        tUser.setMaximumSize(new Dimension(300, 40));
 
-        txtUsername = new JTextField(20);
-        gbc.gridx = 1;
-        gbc.gridy = 1;
-        add(txtUsername, gbc);
+        tPass = new JPasswordField();
+        tPass.putClientProperty("JTextField.placeholderText", "Password"); // Fitur FlatLaf
+        tPass.setFont(MainFrame.FONT_BODY);
+        tPass.setMaximumSize(new Dimension(300, 40));
 
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        add(new JLabel("Password:"), gbc);
-
-        txtPassword = new JPasswordField(20);
-        gbc.gridx = 1;
-        gbc.gridy = 2;
-        add(txtPassword, gbc);
-
-        JButton btnLogin = new JButton("Login");
-        btnLogin.setOpaque(true);
-        btnLogin.setBorderPainted(false);
-        btnLogin.setFocusPainted(false);
-        btnLogin.setFont(new Font("Arial", Font.BOLD, 14));
-        btnLogin.setBackground(new Color(57, 62, 70)); // Warna dari MainFrame
-        btnLogin.setForeground(Color.WHITE);
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.gridwidth = 2;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        add(btnLogin, gbc);
-
-        JLabel lblRegister = new JLabel("<html>Belum punya akun? <u>Registrasi sebagai Anggota</u></html>");
-        lblRegister.setForeground(Color.BLUE);
-        lblRegister.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        lblRegister.setHorizontalAlignment(SwingConstants.CENTER);
-        gbc.gridx = 0;
-        gbc.gridy = 4;
-        add(lblRegister, gbc);
-
-        // --- LOGIC ---
-
-        // Logika Login Multi-Peran
+        JButton btnLogin = MainFrame.createButton("Masuk Sekarang", MainFrame.COL_SIDEBAR_BG);
+        btnLogin.setMaximumSize(new Dimension(300, 40));
+        btnLogin.setAlignmentX(CENTER_ALIGNMENT);
         btnLogin.addActionListener(e -> handleLogin());
 
-        // Navigasi ke Halaman Registrasi
-        lblRegister.addMouseListener(new MouseAdapter() {
-            @Override
+        JLabel linkReg = new JLabel("Belum punya akun? Daftar disini");
+        linkReg.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        linkReg.setForeground(MainFrame.COL_PRIMARY);
+        linkReg.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        linkReg.setAlignmentX(CENTER_ALIGNMENT);
+        linkReg.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
                 cardLayout.show(mainPanel, AppFrame.PANEL_REGISTRASI);
             }
         });
+
+        // Add components with spacing
+        card.add(title);
+        card.add(sub);
+        card.add(Box.createVerticalStrut(30));
+        card.add(new JLabel("Username"));
+        card.add(tUser);
+        card.add(Box.createVerticalStrut(15));
+        card.add(new JLabel("Password"));
+        card.add(tPass);
+        card.add(Box.createVerticalStrut(25));
+        card.add(btnLogin);
+        card.add(Box.createVerticalStrut(15));
+        card.add(linkReg);
+
+        add(card);
     }
 
     private void handleLogin() {
-        String username = txtUsername.getText();
-        String password = new String(txtPassword.getPassword());
+        String u = tUser.getText();
+        String p = new String(tPass.getPassword());
 
-        if (username.equalsIgnoreCase("admin") && password.equals("admin123")) {
-            // Berhasil login sebagai Admin
-            JOptionPane.showMessageDialog(this, "Login Admin Berhasil!");
+        if (u.equalsIgnoreCase("admin") && p.equals("admin123")) {
             new MainFrame().setVisible(true);
             parentFrame.dispose();
-
-        } else if (username.equalsIgnoreCase("peserta") && password.equals("peserta123")) {
-            // Berhasil login sebagai Anggota
-            JOptionPane.showMessageDialog(this, "Login Anggota Berhasil!");
+        } else if (u.equalsIgnoreCase("nabil") && p.equals("nabil123")) {
             new MemberMainFrame().setVisible(true);
             parentFrame.dispose();
-
-        } else if (username.equalsIgnoreCase("dosen") && password.equals("dosen123")) {
-            // Berhasil login sebagai Dosen
-            JOptionPane.showMessageDialog(this, "Login Dosen Berhasil!");
-            new Dosen.DosenMainFrame().setVisible(true);
+        } else if (u.equalsIgnoreCase("qorri") && p.equals("qorri123")) {
+            new DosenMainFrame().setVisible(true);
             parentFrame.dispose();
-
         } else {
-            // Gagal login
-            JOptionPane.showMessageDialog(this, "Username atau Password salah.", "Login Gagal",
-                    JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Login Gagal!", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

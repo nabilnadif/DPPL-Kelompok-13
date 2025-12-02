@@ -5,198 +5,123 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
-import java.awt.geom.RoundRectangle2D;
-
-// Menggunakan konstanta style dari DosenMainFrame
-import static Dosen.DosenMainFrame.*;
-import Admin.MainFrame; // Kita pinjam utilitas formatRupiah & createSearchField
+import Admin.MainFrame; // Import wajib untuk style
 
 public class LaporanKeuanganPanel extends JPanel {
 
-    // Model Data Lokal
-    private DefaultTableModel modelKeuangan;
-
-    // Komponen List
-    private JTable tabelKeuangan;
-    private TableRowSorter<DefaultTableModel> sorterKeuangan;
-    private JLabel lblTotalKeuangan, lblTotalPemasukan, lblTotalPengeluaran;
+    private DefaultTableModel model;
+    private JTable table;
+    private TableRowSorter<DefaultTableModel> sorter;
 
     public LaporanKeuanganPanel() {
-        // HANYA ADA TAMPILAN LIST (Read-Only)
-        setLayout(new BorderLayout());
-        setBackground(WARNA_KONTEN_BG);
-        setBorder(new EmptyBorder(20, 20, 20, 20));
-        add(createListPanel(), BorderLayout.CENTER);
+        setLayout(new BorderLayout(20, 20));
+        setBackground(MainFrame.COL_CONTENT_BG); // Menggunakan warna baru
+        setBorder(new EmptyBorder(30, 40, 30, 40));
 
-        // Update label dengan data dummy
-        updateTotalLabels(1932049, 500000, 308000); // Sesuai mockup
-    }
+        // 1. Header
+        JLabel title = new JLabel("Laporan Keuangan UKM");
+        title.setFont(MainFrame.FONT_H1);
+        title.setForeground(MainFrame.COL_TEXT_DARK);
 
-    private JPanel createListPanel() {
-        JPanel panel = new JPanel(new BorderLayout(20, 20));
-        panel.setOpaque(false);
-        panel.add(new HeaderPanel("Laporan Keuangan UKM"), BorderLayout.NORTH); // [cite: 552]
+        // 2. Summary Cards Container
+        JPanel cardsPanel = new JPanel(new GridLayout(1, 3, 20, 0));
+        cardsPanel.setOpaque(false);
+        cardsPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
 
-        JPanel panelKonten = new JPanel(new BorderLayout(10, 10));
-        panelKonten.setOpaque(false);
+        // Tambahkan Kartu Ringkasan (Hardcoded data dummy untuk Dosen)
+        cardsPanel.add(createStatCard("Total Saldo", "Rp. 1.932.049", MainFrame.COL_PRIMARY));
+        cardsPanel.add(createStatCard("Pemasukan", "+Rp. 500.000", MainFrame.COL_SUCCESS));
+        cardsPanel.add(createStatCard("Pengeluaran", "-Rp. 308.000", MainFrame.COL_DANGER));
 
-        JPanel panelAtas = new JPanel();
-        panelAtas.setLayout(new BoxLayout(panelAtas, BoxLayout.Y_AXIS));
-        panelAtas.setOpaque(false);
+        // Wrapper Header (Judul + Kartu)
+        JPanel headerWrapper = new JPanel(new BorderLayout(0, 20));
+        headerWrapper.setOpaque(false);
+        headerWrapper.add(title, BorderLayout.NORTH);
+        headerWrapper.add(cardsPanel, BorderLayout.CENTER);
 
-        // --- Panel Kartu Ringkasan (sesuai mockup) --- [cite: 554, 555, 557]
-        RoundedPanel panelKartu = new RoundedPanel(15, WARNA_CARD_BG);
-        panelKartu.setLayout(new FlowLayout(FlowLayout.LEFT, 20, 20));
+        add(headerWrapper, BorderLayout.NORTH);
 
-        lblTotalKeuangan = new JLabel("Rp. 1.932.049,-");
-        lblTotalPemasukan = new JLabel("+Rp. 500.000,-");
-        lblTotalPengeluaran = new JLabel("-Rp. 308.000,-");
+        // 3. Tabel Data (Read Only)
+        // Toolbar (Hanya Search, tanpa tombol Tambah/Edit)
+        JPanel toolbar = new JPanel(new BorderLayout());
+        toolbar.setOpaque(false);
+        toolbar.setBorder(new EmptyBorder(0, 0, 10, 0));
 
-        panelKartu.add(buatSubCardKeuangan("Keuangan UKM", lblTotalKeuangan)); // [cite: 554]
-        panelKartu.add(buatSubCardKeuangan("Pemasukan UKM", lblTotalPemasukan)); // [cite: 555]
-        panelKartu.add(buatSubCardKeuangan("Pengeluaran UKM", lblTotalPengeluaran)); // [cite: 557]
+        JTextField txtSearch = MainFrame.createSearchField("Cari transaksi...");
+        txtSearch.setPreferredSize(new Dimension(250, 35));
 
-        panelKartu.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
-        panelAtas.add(panelKartu);
-        panelAtas.add(Box.createRigidArea(new Dimension(0, 15)));
-
-        // --- Panel Kontrol (HANYA SEARCH) ---
-        JPanel panelKontrol = new JPanel(new BorderLayout(10, 10));
-        panelKontrol.setOpaque(false);
-
-        // TOMBOL TAMBAH/UPDATE/HAPUS DIHILANGKAN (Read-Only)
-
-        JPanel panelCari = new JPanel(new BorderLayout(5, 5));
-        panelCari.setOpaque(false);
-        final JTextField txtCari = MainFrame.createSearchField("Pencarian data..."); // [cite: 558]
-
-        // Buat model data lokal
-        initModel();
-        tabelKeuangan = new JTable(modelKeuangan);
-        tabelKeuangan.setFont(MainFrame.FONT_NORMAL);
-        tabelKeuangan.setRowHeight(30);
-        tabelKeuangan.getTableHeader().setFont(MainFrame.FONT_BOLD);
-        tabelKeuangan.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
-        sorterKeuangan = new TableRowSorter<>(modelKeuangan);
-        tabelKeuangan.setRowSorter(sorterKeuangan);
-
-        JButton btnCari = new JButton("Cari"); // [cite: 561]
-        btnCari.addActionListener(e -> {
-            String teks = txtCari.getText();
-            if (teks.equals("Pencarian data...") || teks.trim().length() == 0) {
-                sorterKeuangan.setRowFilter(null);
+        // Logika Search
+        txtSearch.addActionListener(e -> {
+            String text = txtSearch.getText();
+            if (text.length() == 0 || text.equals("Cari transaksi...")) {
+                sorter.setRowFilter(null);
             } else {
-                sorterKeuangan.setRowFilter(RowFilter.regexFilter("(?i)" + teks));
+                sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
             }
         });
 
-        panelCari.add(txtCari, BorderLayout.CENTER);
-        panelCari.add(btnCari, BorderLayout.EAST);
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        searchPanel.setOpaque(false);
+        searchPanel.add(txtSearch);
 
-        // Hanya tambahkan panelCari (bukan panelTombol)
-        panelKontrol.add(panelCari, BorderLayout.CENTER);
-        panelKontrol.setMaximumSize(new Dimension(Integer.MAX_VALUE, panelKontrol.getPreferredSize().height));
+        toolbar.add(searchPanel, BorderLayout.EAST);
 
-        panelAtas.add(panelKontrol);
-        panelKonten.add(panelAtas, BorderLayout.NORTH);
+        // Inisialisasi Model & Tabel
+        initModel();
+        table = new JTable(model);
+        MainFrame.decorateTable(table); // Menggunakan style tabel modern dari Admin
 
-        panelKonten.add(new JScrollPane(tabelKeuangan), BorderLayout.CENTER);
+        sorter = new TableRowSorter<>(model);
+        table.setRowSorter(sorter);
 
-        panel.add(panelKonten, BorderLayout.CENTER);
-        return panel;
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.getViewport().setBackground(Color.WHITE);
+
+        // Panel Tengah (Toolbar + Tabel)
+        JPanel centerPanel = new JPanel(new BorderLayout());
+        centerPanel.setOpaque(false);
+        centerPanel.add(toolbar, BorderLayout.NORTH);
+        centerPanel.add(scrollPane, BorderLayout.CENTER);
+
+        add(centerPanel, BorderLayout.CENTER);
     }
 
     private void initModel() {
-        String[] kolomKeuangan = { "Nama Pencatatan", "Tipe", "Jumlah", "Pencatat" }; // [cite: 559, 560, 562, 565]
-        Object[][] dataKeuangan = {
-                // Data dari mockup [cite: 566, 567, 568, 569, 570, 571, 572, 573, 574, 575,
-                // 576, 577, 578, 579, 580, 581]
-                { "Dana sponsor", "Pemasukan", "+Rp. 500.000,-", "Admin 1" },
-                { "Gorengan acara", "Pengeluaran", "-Rp. 103.000,-", "Admin 2" },
-                { "Isi tinta printer", "Pengeluaran", "-Rp. 250.000,-", "Admin 1" },
-                { "Pembelian alat tulis", "Pengeluaran", "-Rp. 45.000,-", "Admin 2" }
+        String[] columns = { "Nama Transaksi", "Tipe", "Jumlah", "Pencatat" };
+        Object[][] data = {
+                { "Dana Sponsor", "Pemasukan", "+Rp. 500.000,-", "Admin 1" },
+                { "Konsumsi Rapat", "Pengeluaran", "-Rp. 103.000,-", "Admin 2" },
+                { "Cetak Proposal", "Pengeluaran", "-Rp. 250.000,-", "Admin 1" },
+                { "Pembelian ATK", "Pengeluaran", "-Rp. 45.000,-", "Admin 2" }
         };
-        modelKeuangan = new DefaultTableModel(dataKeuangan, kolomKeuangan) {
+        model = new DefaultTableModel(data, columns) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false;
+                return false; // Read-only
             }
         };
     }
 
-    // =========================================================================
-    // --- HELPER & INNER CLASSES (Kopi dari Admin/KeuanganPage) ---
-    // =========================================================================
+    // Helper khusus untuk membuat kartu ringkasan
+    private JPanel createStatCard(String label, String value, Color accentColor) {
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 3, 0, accentColor), // Garis bawah berwarna
+                BorderFactory.createEmptyBorder(15, 20, 15, 20)));
 
-    private JPanel buatSubCardKeuangan(String judul, JLabel lblIsi) {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setOpaque(false);
+        JLabel lblTitle = new JLabel(label);
+        lblTitle.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        lblTitle.setForeground(MainFrame.COL_TEXT_MUTED);
 
-        JLabel lblJudul = new JLabel(judul);
-        lblJudul.setFont(MainFrame.FONT_NORMAL);
-        lblJudul.setForeground(WARNA_TEKS_PUTIH);
-        panel.add(lblJudul);
+        JLabel lblValue = new JLabel(value);
+        lblValue.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        lblValue.setForeground(MainFrame.COL_TEXT_DARK);
 
-        lblIsi.setFont(MainFrame.FONT_BOLD);
-        lblIsi.setForeground(WARNA_TEKS_PUTIH);
-        panel.add(lblIsi);
-        return panel;
-    }
+        card.add(lblTitle, BorderLayout.NORTH);
+        card.add(lblValue, BorderLayout.CENTER);
 
-    // Versi lokal untuk update label
-    public void updateTotalLabels(long totalBalance, long totalPemasukan, long totalPengeluaran) {
-        lblTotalPemasukan.setText(MainFrame.formatRupiah(totalPemasukan, "Pemasukan"));
-        lblTotalPengeluaran.setText(MainFrame.formatRupiah(totalPengeluaran, "Pengeluaran"));
-        lblTotalKeuangan.setText(MainFrame.formatRupiah(totalBalance, "Balance"));
-    }
-
-    private class HeaderPanel extends JPanel {
-        public HeaderPanel(String judulHalaman) {
-            setLayout(new BorderLayout());
-            setOpaque(false);
-            setBorder(new EmptyBorder(0, 0, 15, 0));
-            JLabel lblJudul = new JLabel(judulHalaman);
-            lblJudul.setFont(new Font("Arial", Font.BOLD, 24));
-            lblJudul.setForeground(WARNA_TEKS_HITAM);
-            add(lblJudul, BorderLayout.WEST);
-            JPanel panelUser = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-            panelUser.setOpaque(false);
-
-            ImageIcon bellIcon = DosenMainFrame.loadIcon("/icons/Bell.png", 24, 24);
-            JLabel lblNotif = new JLabel(bellIcon);
-
-            JLabel lblUser = new JLabel("Qorri Adisty [v]"); // [cite: 553]
-            lblUser.setFont(FONT_BOLD);
-            panelUser.add(lblNotif);
-            panelUser.add(lblUser);
-            add(panelUser, BorderLayout.EAST);
-        }
-    }
-
-    private class RoundedPanel extends JPanel {
-        private int cornerRadius;
-        private Color backgroundColor;
-
-        public RoundedPanel(int radius, Color bgColor) {
-            super();
-            this.cornerRadius = radius;
-            this.backgroundColor = bgColor;
-            setOpaque(false);
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            Dimension arcs = new Dimension(cornerRadius, cornerRadius);
-            int width = getWidth();
-            int height = getHeight();
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setColor(backgroundColor);
-            g2.fill(new RoundRectangle2D.Float(0, 0, width - 1, height - 1, arcs.width, arcs.height));
-            g2.dispose();
-        }
+        return card;
     }
 }

@@ -6,89 +6,63 @@ import java.awt.*;
 
 public class KomunikasiPanel extends JPanel {
 
-    public KomunikasiPanel(MainFrame mainFrame, CardLayout mainCardLayout, JPanel mainCardPanel) {
-        setLayout(new BorderLayout(20, 20));
-        setBackground(MainFrame.WARNA_KONTEN_BG);
-        setBorder(new EmptyBorder(20, 20, 20, 20));
-        add(new HeaderPanel("Pengumuman Baru"), BorderLayout.NORTH);
+    public KomunikasiPanel(MainFrame frame, CardLayout cl, JPanel container) {
+        setLayout(new BorderLayout());
+        setBackground(MainFrame.COL_CONTENT_BG);
+        setBorder(new EmptyBorder(30, 40, 30, 40));
 
-        JPanel panelForm = new JPanel();
-        panelForm.setLayout(new BoxLayout(panelForm, BoxLayout.Y_AXIS));
-        panelForm.setOpaque(false);
-        panelForm.setBorder(new EmptyBorder(10, 10, 10, 10));
+        JLabel title = new JLabel("Buat Pengumuman");
+        title.setFont(MainFrame.FONT_H1);
+        add(title, BorderLayout.NORTH);
 
-        JTextField txtJudul = new JTextField();
-        JTextArea areaIsi = new JTextArea();
-        areaIsi.setRows(10);
-        areaIsi.setFont(MainFrame.FONT_NORMAL);
-        JScrollPane scrollIsi = new JScrollPane(areaIsi);
+        JPanel center = new JPanel(new GridBagLayout());
+        center.setOpaque(false);
 
-        panelForm.add(MainFrame.buatLabelField("Judul Pengumuman *"));
-        panelForm.add(txtJudul);
-        panelForm.add(Box.createRigidArea(new Dimension(0, 15)));
-        panelForm.add(MainFrame.buatLabelField("Isi Pengumuman *"));
-        panelForm.add(scrollIsi);
-        panelForm.add(Box.createRigidArea(new Dimension(0, 20)));
+        JPanel card = new JPanel();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBackground(Color.WHITE);
+        card.setBorder(new EmptyBorder(30, 40, 30, 40));
+        card.setPreferredSize(new Dimension(600, 400));
 
-        JPanel panelTombol = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        panelTombol.setOpaque(false);
-        JButton btnTambah = new JButton("+ Buat Pengumuman");
-        btnTambah.setOpaque(true);
-        btnTambah.setBorderPainted(false);
-        btnTambah.setFocusPainted(false);
-        btnTambah.setFont(MainFrame.FONT_BOLD);
-        btnTambah.setBackground(MainFrame.WARNA_CARD_BG);
-        btnTambah.setForeground(MainFrame.WARNA_TEKS_PUTIH);
-        btnTambah.setFocusPainted(false);
-        btnTambah.setBorderPainted(false);
+        JTextField tSubject = new JTextField();
+        JTextArea tBody = new JTextArea(10, 30);
+        tBody.setLineWrap(true);
+        tBody.setBorder(BorderFactory.createLineBorder(new Color(203, 213, 225)));
 
-        btnTambah.addActionListener(e -> {
-            if (txtJudul.getText().isEmpty() || areaIsi.getText().isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Judul dan Isi wajib diisi.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            JOptionPane.showMessageDialog(this, "Pengumuman Berhasil Dibuat!");
-            txtJudul.setText("");
-            areaIsi.setText("");
-            mainCardLayout.show(mainCardPanel, MainFrame.PANEL_DASHBOARD);
-            mainFrame.setTombolSidebarAktif(MainFrame.PANEL_DASHBOARD);
+        addComp(card, "Judul Pengumuman", tSubject);
+
+        JLabel lBody = new JLabel("Isi Pesan");
+        lBody.setFont(MainFrame.FONT_BOLD);
+        lBody.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.add(lBody);
+        card.add(Box.createVerticalStrut(5));
+        JScrollPane sc = new JScrollPane(tBody);
+        sc.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.add(sc);
+        card.add(Box.createVerticalStrut(20));
+
+        JButton btnSend = MainFrame.createButton("Kirim Pengumuman", MainFrame.COL_PRIMARY);
+        btnSend.setAlignmentX(Component.LEFT_ALIGNMENT);
+        btnSend.addActionListener(e -> {
+            JOptionPane.showMessageDialog(this, "Terkirim!");
+            tSubject.setText("");
+            tBody.setText("");
         });
 
-        panelTombol.add(btnTambah);
-        panelForm.add(panelTombol);
-        panelForm.add(Box.createVerticalGlue());
-
-        JPanel wrapperForm = new JPanel(new BorderLayout());
-        wrapperForm.setOpaque(false);
-        wrapperForm.add(panelForm, BorderLayout.NORTH);
-
-        add(wrapperForm, BorderLayout.CENTER);
+        card.add(btnSend);
+        center.add(card);
+        add(center, BorderLayout.CENTER);
     }
 
-    // =========================================================================
-    // --- INNER CLASSES (Kopi) ---
-    // =========================================================================
-
-    private class HeaderPanel extends JPanel {
-        public HeaderPanel(String judulHalaman) {
-            setLayout(new BorderLayout());
-            setOpaque(false);
-            setBorder(new EmptyBorder(0, 0, 15, 0));
-            JLabel lblJudul = new JLabel(judulHalaman);
-            lblJudul.setFont(MainFrame.FONT_JUDUL);
-            lblJudul.setForeground(MainFrame.WARNA_TEKS_HITAM);
-            add(lblJudul, BorderLayout.WEST);
-            JPanel panelUser = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-            panelUser.setOpaque(false);
-
-            ImageIcon bellIcon = MainFrame.loadIcon("/icons/Bell.png", 24, 24);
-            JLabel lblNotif = new JLabel(bellIcon);
-
-            JLabel lblUser = new JLabel("Gusti Panji W. [v]");
-            lblUser.setFont(MainFrame.FONT_BOLD);
-            panelUser.add(lblNotif);
-            panelUser.add(lblUser);
-            add(panelUser, BorderLayout.EAST);
-        }
+    private void addComp(JPanel p, String lbl, JComponent c) {
+        JLabel l = new JLabel(lbl);
+        l.setFont(MainFrame.FONT_BOLD);
+        l.setAlignmentX(Component.LEFT_ALIGNMENT);
+        c.setMaximumSize(new Dimension(1000, 35));
+        c.setAlignmentX(Component.LEFT_ALIGNMENT);
+        p.add(l);
+        p.add(Box.createVerticalStrut(5));
+        p.add(c);
+        p.add(Box.createVerticalStrut(15));
     }
 }

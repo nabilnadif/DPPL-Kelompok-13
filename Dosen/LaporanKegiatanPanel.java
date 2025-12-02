@@ -5,106 +5,86 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
-import java.awt.geom.RoundRectangle2D;
-
-// Menggunakan konstanta style dari DosenMainFrame
-import static Dosen.DosenMainFrame.*;
-import Admin.MainFrame; // Kita pinjam utilitas
+import Admin.MainFrame; // Import wajib
 
 public class LaporanKegiatanPanel extends JPanel {
 
-    // Model Data Lokal
-    private DefaultTableModel modelKegiatan;
-
-    // Komponen List
-    private JTable tabelKegiatan;
-    private TableRowSorter<DefaultTableModel> sorterKegiatan;
+    private DefaultTableModel model;
+    private JTable table;
+    private TableRowSorter<DefaultTableModel> sorter;
 
     public LaporanKegiatanPanel() {
-        // HANYA ADA TAMPILAN LIST (Read-Only)
-        setLayout(new BorderLayout());
-        setBackground(WARNA_KONTEN_BG);
-        setBorder(new EmptyBorder(20, 20, 20, 20));
-        add(createListPanel(), BorderLayout.CENTER);
-    }
+        setLayout(new BorderLayout(20, 20));
+        setBackground(MainFrame.COL_CONTENT_BG);
+        setBorder(new EmptyBorder(30, 40, 30, 40));
 
-    private JPanel createListPanel() {
-        JPanel panel = new JPanel(new BorderLayout(20, 20));
-        panel.setOpaque(false);
-        panel.add(new HeaderPanel("Laporan Kegiatan UKM"), BorderLayout.NORTH); // [cite: 4]
+        // 1. Header
+        JLabel title = new JLabel("Laporan Kegiatan UKM");
+        title.setFont(MainFrame.FONT_H1);
+        title.setForeground(MainFrame.COL_TEXT_DARK);
 
-        JPanel panelKonten = new JPanel(new BorderLayout(10, 10));
-        panelKonten.setOpaque(false);
+        // 2. Jadwal Highlight (Sama seperti Dashboard)
+        JPanel schedulePanel = createScheduleHighlight();
 
-        JPanel panelAtas = new JPanel();
-        panelAtas.setLayout(new BoxLayout(panelAtas, BoxLayout.Y_AXIS));
-        panelAtas.setOpaque(false);
+        JPanel topSection = new JPanel(new BorderLayout(0, 20));
+        topSection.setOpaque(false);
+        topSection.add(title, BorderLayout.NORTH);
+        topSection.add(schedulePanel, BorderLayout.CENTER);
 
-        // --- Panel Jadwal (sesuai mockup) --- [cite: 5]
-        JPanel wrapperJadwalTengah = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
-        wrapperJadwalTengah.setOpaque(false);
-        wrapperJadwalTengah.add(buatPanelJadwal()); // Panggil helper internal
-        wrapperJadwalTengah
-                .setMaximumSize(new Dimension(Integer.MAX_VALUE, wrapperJadwalTengah.getPreferredSize().height));
-        panelAtas.add(wrapperJadwalTengah);
-        panelAtas.add(Box.createRigidArea(new Dimension(0, 15)));
+        add(topSection, BorderLayout.NORTH);
 
-        // --- Panel Kontrol (HANYA SEARCH) ---
-        JPanel panelKontrol = new JPanel(new BorderLayout(10, 10));
-        panelKontrol.setOpaque(false);
+        // 3. Tabel Data (Read Only)
+        JPanel toolbar = new JPanel(new BorderLayout());
+        toolbar.setOpaque(false);
+        toolbar.setBorder(new EmptyBorder(0, 0, 10, 0));
 
-        // TOMBOL TAMBAH/UPDATE/HAPUS DIHILANGKAN (Read-Only)
+        JTextField txtSearch = MainFrame.createSearchField("Cari kegiatan...");
+        txtSearch.setPreferredSize(new Dimension(250, 35));
 
-        JPanel panelCari = new JPanel(new BorderLayout(5, 5));
-        panelCari.setOpaque(false);
-        final JTextField txtCari = MainFrame.createSearchField("Pencarian Kegiatan..."); // [cite: 5]
-
-        // Buat model data lokal
-        initModel();
-        tabelKegiatan = new JTable(modelKegiatan);
-        tabelKegiatan.setFont(MainFrame.FONT_NORMAL);
-        tabelKegiatan.setRowHeight(30);
-        tabelKegiatan.getTableHeader().setFont(MainFrame.FONT_BOLD);
-        tabelKegiatan.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
-        sorterKegiatan = new TableRowSorter<>(modelKegiatan);
-        tabelKegiatan.setRowSorter(sorterKegiatan);
-
-        JButton btnCari = new JButton("Cari");
-        btnCari.addActionListener(e -> {
-            String teks = txtCari.getText();
-            if (teks.equals("Pencarian Kegiatan...") || teks.trim().length() == 0) {
-                sorterKegiatan.setRowFilter(null);
+        // Logika Search
+        txtSearch.addActionListener(e -> {
+            String text = txtSearch.getText();
+            if (text.length() == 0 || text.equals("Cari kegiatan...")) {
+                sorter.setRowFilter(null);
             } else {
-                sorterKegiatan.setRowFilter(RowFilter.regexFilter("(?i)" + teks));
+                sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
             }
         });
 
-        panelCari.add(txtCari, BorderLayout.CENTER);
-        panelCari.add(btnCari, BorderLayout.EAST);
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        searchPanel.setOpaque(false);
+        searchPanel.add(txtSearch);
 
-        panelKontrol.add(panelCari, BorderLayout.CENTER);
-        panelKontrol.setMaximumSize(new Dimension(Integer.MAX_VALUE, panelKontrol.getPreferredSize().height));
+        toolbar.add(searchPanel, BorderLayout.EAST);
 
-        panelAtas.add(panelKontrol);
-        panelKonten.add(panelAtas, BorderLayout.NORTH);
+        initModel();
+        table = new JTable(model);
+        MainFrame.decorateTable(table); // Style modern
 
-        panelKonten.add(new JScrollPane(tabelKegiatan), BorderLayout.CENTER);
+        sorter = new TableRowSorter<>(model);
+        table.setRowSorter(sorter);
 
-        panel.add(panelKonten, BorderLayout.CENTER);
-        return panel;
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.getViewport().setBackground(Color.WHITE);
+
+        JPanel centerPanel = new JPanel(new BorderLayout());
+        centerPanel.setOpaque(false);
+        centerPanel.add(toolbar, BorderLayout.NORTH);
+        centerPanel.add(scrollPane, BorderLayout.CENTER);
+
+        add(centerPanel, BorderLayout.CENTER);
     }
 
     private void initModel() {
-        String[] kolomKegiatan = { "Nama Kegiatan", "Tipe", "Lokasi", "Pelaksanaan" }; // [cite: 5]
-        Object[][] dataKegiatan = {
-                // Data dari mockup [cite: 5]
-                { "Futsal", "Outdoor", "Gg. Kamboja, Jl. Bang...", "12 November 2025" },
-                { "Sparing Futsal", "Outdoor", "Gg. Kamboja, Jl. Bang...", "15 November 2025" },
-                { "EXPO", "Hybrid", "Fakultas Teknik, UNRI", "15 November 2025" },
-                { "Rapat", "Indoor", "Sekretaris UKM", "21 Desember 2025" },
+        String[] columns = { "Nama Kegiatan", "Tipe", "Lokasi", "Tanggal Pelaksanaan" };
+        Object[][] data = {
+                { "Futsal Mingguan", "Outdoor", "Gg. Kamboja", "12 Nov 2025" },
+                { "Sparing Futsal", "Outdoor", "Gg. Kamboja", "15 Nov 2025" },
+                { "EXPO UKM", "Hybrid", "Fakultas Teknik", "15 Nov 2025" },
+                { "Rapat Bulanan", "Indoor", "Sekretariat", "21 Des 2025" }
         };
-        modelKegiatan = new DefaultTableModel(dataKegiatan, kolomKegiatan) {
+        model = new DefaultTableModel(data, columns) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -112,113 +92,40 @@ public class LaporanKegiatanPanel extends JPanel {
         };
     }
 
-    // =========================================================================
-    // --- HELPER & INNER CLASSES (Kopi dari Admin/KegiatanPage) ---
-    // =========================================================================
+    // Helper untuk membuat kotak jadwal (Duplikasi style dari Dashboard agar
+    // konsisten)
+    private JPanel createScheduleHighlight() {
+        JPanel p = new JPanel(new BorderLayout());
+        p.setBackground(Color.WHITE);
+        p.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(226, 232, 240)),
+                new EmptyBorder(20, 25, 20, 25)));
+        // Batasi tinggi agar tidak terlalu besar
+        p.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
 
-    private JPanel buatPanelJadwal() {
-        RoundedPanel panelJadwal = new RoundedPanel(15, WARNA_CARD_BG);
-        panelJadwal.setLayout(new BoxLayout(panelJadwal, BoxLayout.Y_AXIS));
-        panelJadwal.setBorder(new EmptyBorder(20, 20, 20, 20));
+        JLabel h = new JLabel("Jadwal Terdekat");
+        h.setFont(MainFrame.FONT_H2);
+        h.setForeground(MainFrame.COL_TEXT_DARK);
 
-        JLabel judulJadwal = new JLabel("Jadwal Kegiatan Anda Pekan ini"); // [cite: 5]
-        judulJadwal.setFont(MainFrame.FONT_JUDAL);
-        judulJadwal.setForeground(WARNA_TEKS_PUTIH);
-        judulJadwal.setAlignmentX(Component.LEFT_ALIGNMENT);
-        panelJadwal.add(judulJadwal);
+        JPanel content = new JPanel(new GridLayout(1, 2));
+        content.setOpaque(false);
 
-        panelJadwal.add(Box.createRigidArea(new Dimension(0, 15)));
+        JLabel title = new JLabel("Latihan Futsal Mingguan");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        title.setForeground(MainFrame.COL_PRIMARY);
 
-        JPanel detailJadwal = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        detailJadwal.setOpaque(false);
-        detailJadwal.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JLabel date = new JLabel("Minggu, 2 Nov 2025 • 08:00 WIB");
+        date.setFont(MainFrame.FONT_BODY);
 
-        ImageIcon futsalIcon = DosenMainFrame.loadIcon("/icons/Kegiatan.png", 32, 32);
-        JLabel ikonFutsal = new JLabel(futsalIcon);
+        JPanel info = new JPanel(new GridLayout(2, 1));
+        info.setOpaque(false);
+        info.add(title);
+        info.add(date);
 
-        detailJadwal.add(ikonFutsal);
+        p.add(h, BorderLayout.NORTH);
+        p.add(Box.createVerticalStrut(15), BorderLayout.CENTER);
+        p.add(info, BorderLayout.SOUTH);
 
-        JPanel panelTeksJadwal = new JPanel();
-        panelTeksJadwal.setOpaque(false);
-        panelTeksJadwal.setLayout(new BoxLayout(panelTeksJadwal, BoxLayout.Y_AXIS));
-
-        // Data dari mockup [cite: 5]
-        JLabel teksJadwal1 = new JLabel("Latihan Futsal Mingguan");
-        teksJadwal1.setForeground(WARNA_TEKS_PUTIH);
-        teksJadwal1.setFont(MainFrame.FONT_JADWAL_JUDUL);
-
-        JLabel teksJadwal2 = new JLabel("Minggu, 2 November 2025");
-        teksJadwal2.setForeground(WARNA_TEKS_PUTIH);
-        teksJadwal2.setFont(MainFrame.FONT_JADWAL_ISI);
-
-        JLabel teksJadwal3 = new JLabel("08:00 - 10:00 WIB");
-        teksJadwal3.setForeground(WARNA_TEKS_PUTIH);
-        teksJadwal3.setFont(MainFrame.FONT_JADWAL_ISI);
-
-        panelTeksJadwal.add(teksJadwal1);
-        panelTeksJadwal.add(teksJadwal2);
-        panelTeksJadwal.add(teksJadwal3);
-
-        panelTeksJadwal.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(100, 100, 100)),
-                new EmptyBorder(10, 15, 10, 15)));
-
-        detailJadwal.add(panelTeksJadwal);
-        panelJadwal.add(detailJadwal);
-
-        JPanel wrapperJadwal = new JPanel(new BorderLayout());
-        wrapperJadwal.setOpaque(false);
-        wrapperJadwal.add(panelJadwal, BorderLayout.NORTH);
-        wrapperJadwal.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        return wrapperJadwal;
-    }
-
-    private class HeaderPanel extends JPanel {
-        public HeaderPanel(String judulHalaman) {
-            setLayout(new BorderLayout());
-            setOpaque(false);
-            setBorder(new EmptyBorder(0, 0, 15, 0));
-            JLabel lblJudul = new JLabel(judulHalaman);
-            lblJudul.setFont(new Font("Arial", Font.BOLD, 24));
-            lblJudul.setForeground(WARNA_TEKS_HITAM);
-            add(lblJudul, BorderLayout.WEST);
-            JPanel panelUser = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-            panelUser.setOpaque(false);
-
-            ImageIcon bellIcon = DosenMainFrame.loadIcon("/icons/Bell.png", 24, 24);
-            JLabel lblNotif = new JLabel(bellIcon);
-
-            JLabel lblUser = new JLabel("Qorri Adisty [v]"); // [cite: 7]
-            lblUser.setFont(FONT_BOLD);
-            panelUser.add(lblNotif);
-            panelUser.add(lblUser);
-            add(panelUser, BorderLayout.EAST);
-        }
-    }
-
-    private class RoundedPanel extends JPanel {
-        private int cornerRadius;
-        private Color backgroundColor;
-
-        public RoundedPanel(int radius, Color bgColor) {
-            super();
-            this.cornerRadius = radius;
-            this.backgroundColor = bgColor;
-            setOpaque(false);
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            Dimension arcs = new Dimension(cornerRadius, cornerRadius);
-            int width = getWidth();
-            int height = getHeight();
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setColor(backgroundColor);
-            g2.fill(new RoundRectangle2D.Float(0, 0, width - 1, height - 1, arcs.width, arcs.height));
-            g2.dispose();
-        }
+        return p;
     }
 }

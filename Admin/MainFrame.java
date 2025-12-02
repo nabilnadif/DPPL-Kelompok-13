@@ -2,386 +2,331 @@ package Admin;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.JTableHeader;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
 import java.util.HashMap;
 import java.util.Map;
 
 public class MainFrame extends JFrame {
-    // Konstanta Warna
-    private static final Color WARNA_SIDEBAR_BG = new Color(34, 40, 49);
-    public static final Color WARNA_KONTEN_BG = new Color(245, 245, 245);
-    public static final Color WARNA_CARD_BG = new Color(57, 62, 70);
-    public static final Color WARNA_TEKS_PUTIH = Color.WHITE;
-    public static final Color WARNA_TEKS_HITAM = Color.BLACK;
-    private static final Color WARNA_HIGHLIGHT = new Color(230, 230, 230);
-    public static final Color WARNA_PLACEHOLDER = Color.GRAY;
 
-    // Konstanta Font
-    public static final Font FONT_JUDUL = new Font("Arial", Font.BOLD, 24);
-    public static final Font FONT_NORMAL = new Font("Arial", Font.PLAIN, 14);
-    public static final Font FONT_BOLD = new Font("Arial", Font.BOLD, 14);
-    public static final Font FONT_CARD_JUDUL = new Font("Arial", Font.BOLD, 16);
-    public static final Font FONT_CARD_ISI = new Font("Arial", Font.BOLD, 20);
-    public static final Font FONT_JADWAL_JUDUL = new Font("Arial", Font.BOLD, 18);
-    public static final Font FONT_JADWAL_ISI = new Font("Arial", Font.PLAIN, 16);
-    public static final Font FONT_JUDAL = new Font("Arial", Font.PLAIN, 20);
+    // --- PALETTE WARNA MODERN (Flat Design) ---
+    public static final Color COL_SIDEBAR_BG = new Color(30, 41, 59); // Slate 800
+    public static final Color COL_SIDEBAR_HOVER = new Color(51, 65, 85); // Slate 700
+    public static final Color COL_CONTENT_BG = new Color(241, 245, 249); // Slate 100 (Background Utama)
+    public static final Color COL_PRIMARY = new Color(59, 130, 246); // Blue 500
+    public static final Color COL_DANGER = new Color(239, 68, 68); // Red 500
+    public static final Color COL_SUCCESS = new Color(16, 185, 129); // Emerald 500
+    public static final Color COL_TEXT_DARK = new Color(15, 23, 42); // Slate 900
+    public static final Color COL_TEXT_MUTED = new Color(100, 116, 139); // Slate 500
+    public static final Color COL_WHITE = Color.WHITE;
 
-    // Nama Panel CardLayout
+    // --- FONT ---
+    public static final Font FONT_H1 = new Font("Segoe UI", Font.BOLD, 24);
+    public static final Font FONT_H2 = new Font("Segoe UI", Font.BOLD, 18);
+    public static final Font FONT_BODY = new Font("Segoe UI", Font.PLAIN, 14);
+    public static final Font FONT_BOLD = new Font("Segoe UI", Font.BOLD, 14);
+
+    // --- KONSTANTA PANEL ---
     public static final String PANEL_DASHBOARD = "Dashboard";
     public static final String PANEL_ANGGOTA = "Anggota UKM";
     public static final String PANEL_KEUANGAN = "Keuangan UKM";
     public static final String PANEL_KEGIATAN = "Kegiatan UKM";
     public static final String PANEL_KOMUNIKASI = "Komunikasi UKM";
 
-    // Nama internal (untuk logika sidebar dan 'Page')
-    public static final String PANEL_TAMBAH_ANGGOTA = "Tambah Anggota";
-    public static final String PANEL_TAMBAH_KEUANGAN = "Tambah Catatan Keuangan";
-    public static final String PANEL_TAMBAH_KEGIATAN = "Tambah Proposal Kegiatan";
-
     // Komponen GUI Utama
     private JPanel panelSidebar;
     private JPanel panelKontenUtama;
     private CardLayout cardLayout;
-    private Map<String, JButton> tombolSidebar;
-    private Map<String, ImageIcon[]> iconMap;
+    private Map<String, JButton> tombolSidebar = new HashMap<>();
+    private Map<String, ImageIcon[]> iconMap = new HashMap<>();
 
     // Model Data
-    private DefaultTableModel modelAnggota;
-    private DefaultTableModel modelKeuangan;
-    private DefaultTableModel modelKegiatan;
+    private DefaultTableModel modelAnggota, modelKeuangan, modelKegiatan;
 
-    // Referensi Panel Halaman
+    // Referensi Halaman
     private DashboardPanel dashboardPanel;
     private KeuanganPage keuanganPage;
 
     public MainFrame() {
         setTitle("Sistem Pengelolaan UKM - Admin");
-        setSize(1200, 800);
+        setSize(1280, 800);
         setMinimumSize(new Dimension(1000, 700));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-        getContentPane().setLayout(new BorderLayout());
+        setLayout(new BorderLayout());
 
-        tombolSidebar = new HashMap<>();
-        iconMap = new HashMap<>();
+        // Inisialisasi Data & UI
+        initModels();
 
         buatPanelSidebar();
-        getContentPane().add(panelSidebar, BorderLayout.WEST);
+        add(panelSidebar, BorderLayout.WEST);
 
         cardLayout = new CardLayout();
         panelKontenUtama = new JPanel(cardLayout);
-        panelKontenUtama.setBackground(WARNA_KONTEN_BG);
+        panelKontenUtama.setBackground(COL_CONTENT_BG);
 
-        initModels();
         initPanels();
-        tambahPanelKeKonten();
+        add(panelKontenUtama, BorderLayout.CENTER);
 
-        getContentPane().add(panelKontenUtama, BorderLayout.CENTER);
-
+        // Set Awal
         setTombolSidebarAktif(PANEL_DASHBOARD);
-
         updateTotalAnggota();
         updateTotalKeuangan();
     }
 
     private void initModels() {
         // Model Anggota
-        String[] kolomAnggota = { "Nama", "NIM", "Telepon", "Email", "Status" };
-        Object[][] dataAnggota = {
+        String[] colAnggota = { "Nama", "NIM", "Telepon", "Email", "Status" };
+        Object[][] datAnggota = {
                 { "M. Nabil Nadif", "2407112714", "0812...", "nabil@example.com", "Aktif" },
                 { "Qorri Adistya", "2107111517", "0813...", "qorri@example.com", "Aktif" },
-                { "Gusti Panji Widodo", "2407113145", "0814...", "gusti@example.com", "Non-Aktif" },
+                { "Gusti Panji", "2407113145", "0814...", "gusti@example.com", "Non-Aktif" }
         };
-        modelAnggota = new DefaultTableModel(dataAnggota, kolomAnggota) {
+        modelAnggota = new DefaultTableModel(datAnggota, colAnggota) {
             @Override
-            public boolean isCellEditable(int row, int column) {
+            public boolean isCellEditable(int r, int c) {
                 return false;
             }
         };
 
         // Model Keuangan
-        String[] kolomKeuangan = { "Nama Pencatatan", "Tipe", "Jumlah", "Pencatat" };
-        Object[][] dataKeuangan = {
-                { "Dana sponsor", "Pemasukan", "+Rp. 500.000,-", "Admin 1" },
-                { "Gorengan acara", "Pengeluaran", "-Rp. 103.000,-", "Admin 2" },
-                { "Isi tinta printer", "Pengeluaran", "-Rp. 250.000,-", "Admin 1" },
+        String[] colKeu = { "Nama Transaksi", "Tipe", "Jumlah", "Pencatat" };
+        Object[][] datKeu = {
+                { "Dana Sponsor", "Pemasukan", "+Rp. 500.000,-", "Admin 1" },
+                { "Konsumsi Rapat", "Pengeluaran", "-Rp. 103.000,-", "Admin 2" },
+                { "Cetak Proposal", "Pengeluaran", "-Rp. 250.000,-", "Admin 1" }
         };
-        modelKeuangan = new DefaultTableModel(dataKeuangan, kolomKeuangan) {
+        modelKeuangan = new DefaultTableModel(datKeu, colKeu) {
             @Override
-            public boolean isCellEditable(int row, int column) {
+            public boolean isCellEditable(int r, int c) {
                 return false;
             }
         };
 
         // Model Kegiatan
-        String[] kolomKegiatan = { "Nama Kegiatan", "Tipe", "Lokasi", "Pelaksanaan" };
-        Object[][] dataKegiatan = {
-                { "Futsal", "Outdoor", "Gg. Kamboja, Jl. Bang...", "12 November 2025" },
-                { "Sparing Futsal", "Outdoor", "Gg. Kamboja, Jl. Bang...", "15 November 2025" },
-                { "EXPO", "Hybrid", "Fakultas Teknik, UNRI", "15 November 2025" },
+        String[] colKeg = { "Nama Kegiatan", "Tipe", "Lokasi", "Tanggal" };
+        Object[][] datKeg = {
+                { "Futsal Mingguan", "Outdoor", "Gg. Kamboja", "12 Nov 2025" },
+                { "Webinar Tech", "Hybrid", "Zoom Meeting", "15 Nov 2025" },
+                { "Rapat Akbar", "Indoor", "Sekretariat", "20 Nov 2025" }
         };
-        modelKegiatan = new DefaultTableModel(dataKegiatan, kolomKegiatan) {
+        modelKegiatan = new DefaultTableModel(datKeg, colKeg) {
             @Override
-            public boolean isCellEditable(int row, int column) {
+            public boolean isCellEditable(int r, int c) {
                 return false;
             }
         };
     }
 
     private void initPanels() {
-        // Callback untuk update data
-        Runnable onAnggotaDataChanged = this::updateTotalAnggota;
-        Runnable onKeuanganDataChanged = this::updateTotalKeuangan;
-
-        // Inisialisasi Halaman
         dashboardPanel = new DashboardPanel(this, cardLayout, panelKontenUtama);
-        keuanganPage = new KeuanganPage(modelKeuangan, onKeuanganDataChanged);
-    }
+        keuanganPage = new KeuanganPage(modelKeuangan, this::updateTotalKeuangan);
 
-    private void tambahPanelKeKonten() {
         panelKontenUtama.add(dashboardPanel, PANEL_DASHBOARD);
-        // Halaman "Page" sekarang mengelola form internal mereka sendiri
         panelKontenUtama.add(new AnggotaPage(modelAnggota, this::updateTotalAnggota), PANEL_ANGGOTA);
         panelKontenUtama.add(keuanganPage, PANEL_KEUANGAN);
         panelKontenUtama.add(new KegiatanPage(modelKegiatan), PANEL_KEGIATAN);
         panelKontenUtama.add(new KomunikasiPanel(this, cardLayout, panelKontenUtama), PANEL_KOMUNIKASI);
-
-        // Panel "Tambah" tidak lagi dikelola oleh CardLayout utama
     }
 
-    // =========================================================================
-    // --- LOGIKA SIDEBAR (v9 dengan Ikon) ---
-    // =========================================================================
     private void buatPanelSidebar() {
         panelSidebar = new JPanel();
         panelSidebar.setLayout(new BoxLayout(panelSidebar, BoxLayout.Y_AXIS));
-        panelSidebar.setBackground(WARNA_SIDEBAR_BG);
-        panelSidebar.setPreferredSize(new Dimension(220, 0));
-        panelSidebar.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        panelSidebar.setBackground(COL_SIDEBAR_BG);
+        panelSidebar.setPreferredSize(new Dimension(260, 0));
+        panelSidebar.setBorder(new EmptyBorder(30, 20, 30, 20));
 
-        JLabel labelLogo = new JLabel("LOGO UKM");
-        labelLogo.setFont(new Font("Arial", Font.BOLD, 20));
-        labelLogo.setForeground(WARNA_TEKS_PUTIH);
-        labelLogo.setAlignmentX(Component.CENTER_ALIGNMENT);
-        labelLogo.setBorder(BorderFactory.createEmptyBorder(20, 0, 30, 0));
-        panelSidebar.add(labelLogo);
+        // --- LOGO AREA (CENTERED) ---
+        JLabel logo = new JLabel("UKM MANAGER");
+        logo.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        logo.setForeground(COL_WHITE);
+        logo.setAlignmentX(Component.CENTER_ALIGNMENT); // Center Alignment
 
-        String iconPath = "/icons/";
-        int iconSize = 20;
+        JPanel logoPanel = new JPanel(new FlowLayout(FlowLayout.CENTER)); // FlowLayout Center
+        logoPanel.setOpaque(false);
+        logoPanel.add(logo);
+        logoPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
 
-        iconMap.put(PANEL_DASHBOARD, new ImageIcon[] {
-                loadIcon(iconPath + "Home (2).png", iconSize, iconSize),
-                loadIcon(iconPath + "Home(dark).png", iconSize, iconSize)
-        });
-        iconMap.put(PANEL_ANGGOTA, new ImageIcon[] {
-                loadIcon(iconPath + "Anggota.png", iconSize, iconSize),
-                loadIcon(iconPath + "Anggota(dark).png", iconSize, iconSize)
-        });
-        iconMap.put(PANEL_KEUANGAN, new ImageIcon[] {
-                loadIcon(iconPath + "Keuangan.png", iconSize, iconSize),
-                loadIcon(iconPath + "Keuangan(dark).png", iconSize, iconSize)
-        });
-        iconMap.put(PANEL_KEGIATAN, new ImageIcon[] {
-                loadIcon(iconPath + "Kegiatan.png", iconSize, iconSize),
-                loadIcon(iconPath + "Kegiatan(dark).png", iconSize, iconSize)
-        });
-        iconMap.put(PANEL_KOMUNIKASI, new ImageIcon[] {
-                loadIcon(iconPath + "Komunikasi.png", iconSize, iconSize),
-                loadIcon(iconPath + "Komunikasi(dark).png", iconSize, iconSize)
-        });
+        panelSidebar.add(logoPanel);
+        panelSidebar.add(Box.createRigidArea(new Dimension(0, 40))); // Spacer
 
-        panelSidebar.add(buatTombolSidebar("Dashboard", PANEL_DASHBOARD, iconMap.get(PANEL_DASHBOARD)[0]));
-        panelSidebar.add(Box.createRigidArea(new Dimension(0, 5)));
-        panelSidebar.add(buatTombolSidebar("Anggota UKM", PANEL_ANGGOTA, iconMap.get(PANEL_ANGGOTA)[0]));
-        panelSidebar.add(Box.createRigidArea(new Dimension(0, 5)));
-        panelSidebar.add(buatTombolSidebar("Keuangan UKM", PANEL_KEUANGAN, iconMap.get(PANEL_KEUANGAN)[0]));
-        panelSidebar.add(Box.createRigidArea(new Dimension(0, 5)));
-        panelSidebar.add(buatTombolSidebar("Kegiatan UKM", PANEL_KEGIATAN, iconMap.get(PANEL_KEGIATAN)[0]));
-        panelSidebar.add(Box.createRigidArea(new Dimension(0, 5)));
-        panelSidebar.add(buatTombolSidebar("Komunikasi", PANEL_KOMUNIKASI, iconMap.get(PANEL_KOMUNIKASI)[0]));
+        // Load Icons
+        String path = "/icons/";
+        iconMap.put(PANEL_DASHBOARD,
+                new ImageIcon[] { loadIcon(path + "Home (2).png", 20), loadIcon(path + "Home(dark).png", 20) });
+        iconMap.put(PANEL_ANGGOTA,
+                new ImageIcon[] { loadIcon(path + "Anggota.png", 20), loadIcon(path + "Anggota(dark).png", 20) });
+        iconMap.put(PANEL_KEUANGAN,
+                new ImageIcon[] { loadIcon(path + "Keuangan.png", 20), loadIcon(path + "Keuangan(dark).png", 20) });
+        iconMap.put(PANEL_KEGIATAN,
+                new ImageIcon[] { loadIcon(path + "Kegiatan.png", 20), loadIcon(path + "Kegiatan(dark).png", 20) });
+        iconMap.put(PANEL_KOMUNIKASI,
+                new ImageIcon[] { loadIcon(path + "Komunikasi.png", 20), loadIcon(path + "Komunikasi(dark).png", 20) });
+
+        // Tambah Tombol
+        addSidebarItem("Dashboard", PANEL_DASHBOARD);
+        addSidebarItem("Anggota", PANEL_ANGGOTA);
+        addSidebarItem("Keuangan", PANEL_KEUANGAN);
+        addSidebarItem("Kegiatan", PANEL_KEGIATAN);
+        addSidebarItem("Komunikasi", PANEL_KOMUNIKASI);
 
         panelSidebar.add(Box.createVerticalGlue());
+
+        // Footer User (Centered)
+        JLabel userFooter = new JLabel("Admin: Gusti Panji");
+        userFooter.setForeground(COL_TEXT_MUTED);
+        userFooter.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        userFooter.setAlignmentX(Component.CENTER_ALIGNMENT); // Center
+        panelSidebar.add(userFooter);
     }
 
-    private JButton buatTombolSidebar(String teks, String namaPanel, ImageIcon icon) {
-        JButton tombol = new JButton(teks, icon);
-        tombol.setIconTextGap(15);
+    private void addSidebarItem(String text, String key) {
+        JButton btn = new JButton(text);
+        btn.setIcon(iconMap.get(key)[0]);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btn.setForeground(new Color(203, 213, 225)); // Slate 300
+        btn.setBackground(COL_SIDEBAR_BG);
 
-        tombol.setForeground(WARNA_TEKS_PUTIH);
-        tombol.setBackground(WARNA_SIDEBAR_BG);
-        tombol.setFont(FONT_BOLD);
-        tombol.setFocusPainted(false);
-        tombol.setBorder(new EmptyBorder(15, 20, 15, 20));
-        tombol.setHorizontalAlignment(SwingConstants.LEFT);
-        tombol.setAlignmentX(Component.CENTER_ALIGNMENT);
-        tombol.setMaximumSize(new Dimension(Integer.MAX_VALUE, tombol.getPreferredSize().height));
-        tombol.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        tombol.setBorderPainted(false);
+        // --- PERUBAHAN UTAMA: ALIGNMENT CENTER ---
+        btn.setBorder(new EmptyBorder(12, 20, 12, 20)); // Padding kiri kanan seimbang
+        btn.setHorizontalAlignment(SwingConstants.CENTER); // Teks & Ikon di tengah
+        btn.setAlignmentX(Component.CENTER_ALIGNMENT); // Tombol di tengah panel
+        // -----------------------------------------
 
-        tombol.addActionListener(e -> {
-            cardLayout.show(panelKontenUtama, namaPanel);
-            setTombolSidebarAktif(namaPanel);
+        btn.setIconTextGap(15);
+        btn.setFocusPainted(false);
+        btn.setBorderPainted(false);
+        btn.setOpaque(true);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setMaximumSize(new Dimension(220, 50)); // Lebar fix agar rapi di tengah
+
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                if (!btn.getBackground().equals(COL_WHITE))
+                    btn.setBackground(COL_SIDEBAR_HOVER);
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                if (!btn.getBackground().equals(COL_WHITE))
+                    btn.setBackground(COL_SIDEBAR_BG);
+            }
         });
 
-        tombolSidebar.put(namaPanel, tombol);
-        return tombol;
+        btn.addActionListener(e -> {
+            cardLayout.show(panelKontenUtama, key);
+            setTombolSidebarAktif(key);
+        });
+
+        tombolSidebar.put(key, btn);
+        panelSidebar.add(btn);
+        panelSidebar.add(Box.createRigidArea(new Dimension(0, 10))); // Jarak antar tombol
     }
 
-    // Dibuat public agar bisa dipanggil oleh panel anak
-    public void setTombolSidebarAktif(String namaPanel) {
-        // Logika ini penting agar tombol sidebar tetap 'aktif'
-        // meskipun kita berada di panel form internal.
-        String panelAktif = namaPanel;
-        if (namaPanel.equals(PANEL_TAMBAH_ANGGOTA))
-            panelAktif = PANEL_ANGGOTA;
-        else if (namaPanel.equals(PANEL_TAMBAH_KEUANGAN))
-            panelAktif = PANEL_KEUANGAN;
-        else if (namaPanel.equals(PANEL_TAMBAH_KEGIATAN))
-            panelAktif = PANEL_KEGIATAN;
-
-        for (String key : tombolSidebar.keySet()) {
-            JButton tombol = tombolSidebar.get(key);
-            ImageIcon[] icons = iconMap.get(key);
-
-            if (icons == null)
-                continue;
-
-            if (key.equals(panelAktif)) {
-                tombol.setBackground(WARNA_HIGHLIGHT);
-                tombol.setForeground(WARNA_TEKS_HITAM);
-                tombol.setIcon(icons[1]); // Ikon aktif (dark)
+    public void setTombolSidebarAktif(String key) {
+        for (Map.Entry<String, JButton> entry : tombolSidebar.entrySet()) {
+            JButton btn = entry.getValue();
+            if (entry.getKey().equals(key)) {
+                btn.setBackground(COL_WHITE);
+                btn.setForeground(COL_SIDEBAR_BG); // Teks jadi gelap
+                btn.setIcon(iconMap.get(key)[1]); // Icon gelap
             } else {
-                tombol.setBackground(WARNA_SIDEBAR_BG);
-                tombol.setForeground(WARNA_TEKS_PUTIH);
-                tombol.setIcon(icons[0]); // Ikon inactive (white)
+                btn.setBackground(COL_SIDEBAR_BG);
+                btn.setForeground(new Color(203, 213, 225));
+                btn.setIcon(iconMap.get(entry.getKey())[0]); // Icon terang
             }
         }
     }
 
-    // =========================================================================
-    // --- METODE UPDATE DATA ---
-    // =========================================================================
-    public void updateTotalKeuangan() {
-        long totalPemasukan = 0;
-        long totalPengeluaran = 0;
+    // --- HELPER UTILS ---
 
-        if (modelKeuangan == null)
-            return;
+    public static void decorateTable(JTable table) {
+        table.setRowHeight(40);
+        table.setShowVerticalLines(false);
+        table.setGridColor(new Color(226, 232, 240));
+        table.setIntercellSpacing(new Dimension(0, 0));
+        table.setFont(FONT_BODY);
+        table.setSelectionBackground(new Color(219, 234, 254));
+        table.setSelectionForeground(COL_TEXT_DARK);
 
-        for (int i = 0; i < modelKeuangan.getRowCount(); i++) {
-            String tipe = modelKeuangan.getValueAt(i, 1).toString();
-            String jumlahStr = modelKeuangan.getValueAt(i, 2).toString();
-            try {
-                String cleanNumberStr = jumlahStr.replaceAll("[^\\d]", "");
-                if (cleanNumberStr.isEmpty())
-                    continue;
-                long value = Long.parseLong(cleanNumberStr);
-                if (tipe.equals("Pemasukan")) {
-                    totalPemasukan += value;
-                } else if (tipe.equals("Pengeluaran")) {
-                    totalPengeluaran += value;
-                }
-            } catch (NumberFormatException e) {
-                System.err.println("Error parsing number: " + jumlahStr);
-            }
-        }
-        long totalBalance = totalPemasukan - totalPengeluaran;
+        JTableHeader header = table.getTableHeader();
+        header.setFont(FONT_BOLD);
+        header.setBackground(COL_WHITE);
+        header.setForeground(COL_TEXT_MUTED);
+        header.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, new Color(226, 232, 240)));
 
-        if (keuanganPage != null) {
-            keuanganPage.updateTotalLabels(totalBalance, totalPemasukan, totalPengeluaran);
-        }
-        if (dashboardPanel != null) {
-            dashboardPanel.updateKeuanganLabel(totalBalance);
-        }
+        ((DefaultTableCellRenderer) table.getDefaultRenderer(Object.class)).setBorder(new EmptyBorder(0, 10, 0, 10));
     }
 
-    public void updateTotalAnggota() {
-        int totalMember = 0;
-        int anggotaAktif = 0;
-
-        if (modelAnggota != null) {
-            totalMember = modelAnggota.getRowCount();
-            for (int i = 0; i < totalMember; i++) {
-                String status = modelAnggota.getValueAt(i, 4).toString();
-                if (status.equalsIgnoreCase("Aktif")) {
-                    anggotaAktif++;
-                }
-            }
-        }
-        if (dashboardPanel != null) {
-            dashboardPanel.updateAnggotaLabels(anggotaAktif, totalMember);
-        }
-    }
-
-    // =========================================================================
-    // --- Utilitas Gabungan (dari Utils.java) ---
-    // =========================================================================
-
-    public static String formatRupiah(long value, String type) {
-        long displayValue = Math.abs(value);
-        String formatted = String.format("%,d", displayValue).replace(",", ".");
-
-        switch (type) {
-            case "Pemasukan":
-                return "+Rp. " + formatted + ",-";
-            case "Pengeluaran":
-                return "-Rp. " + formatted + ",-";
-            case "Balance":
-                return (value < 0 ? "-Rp. " : "Rp. ") + formatted + ",-";
-            default:
-                return "Rp. " + formatted + ",-";
-        }
-    }
-
-    public static JLabel buatLabelField(String teks) {
-        JLabel label = new JLabel(teks);
-        label.setFont(FONT_BOLD);
-        label.setBorder(new EmptyBorder(0, 0, 5, 0));
-        return label;
+    public static JButton createButton(String text, Color bg) {
+        JButton btn = new JButton(text);
+        btn.setFont(FONT_BOLD);
+        btn.setBackground(bg);
+        btn.setForeground(COL_WHITE);
+        btn.setFocusPainted(false);
+        btn.setBorderPainted(false);
+        btn.setOpaque(true);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return btn;
     }
 
     public static JTextField createSearchField(String placeholder) {
-        JTextField searchField = new JTextField(placeholder);
-        searchField.setForeground(WARNA_PLACEHOLDER);
-        searchField.setFont(FONT_NORMAL);
-
-        searchField.addFocusListener(new FocusAdapter() {
-            @Override
-            public void focusGained(FocusEvent e) {
-                if (searchField.getText().equals(placeholder)) {
-                    searchField.setText("");
-                    searchField.setForeground(WARNA_TEKS_HITAM);
-                }
-            }
-
-            @Override
-            public void focusLost(FocusEvent e) {
-                if (searchField.getText().isEmpty()) {
-                    searchField.setText(placeholder);
-                    searchField.setForeground(WARNA_PLACEHOLDER);
-                }
-            }
-        });
-        return searchField;
+        JTextField field = new JTextField(placeholder);
+        field.putClientProperty("JTextField.placeholderText", placeholder);
+        field.setFont(FONT_BODY);
+        field.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(203, 213, 225)),
+                new EmptyBorder(8, 10, 8, 10)));
+        return field;
     }
 
-    public static ImageIcon loadIcon(String path, int width, int height) {
+    public static String formatRupiah(long value, String type) {
+        String formatted = String.format("%,d", Math.abs(value)).replace(",", ".");
+        if (type.equals("Pemasukan") || (type.equals("Balance") && value >= 0))
+            return "+Rp. " + formatted;
+        if (type.equals("Pengeluaran") || (type.equals("Balance") && value < 0))
+            return "-Rp. " + formatted;
+        return "Rp. " + formatted;
+    }
+
+    private ImageIcon loadIcon(String path, int size) {
         try {
-            java.net.URL imgURL = MainFrame.class.getResource(path);
-            if (imgURL != null) {
-                ImageIcon icon = new ImageIcon(imgURL);
-                Image image = icon.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
-                return new ImageIcon(image);
-            } else {
-                System.err.println("Gagal memuat ikon: " + path);
+            java.net.URL url = getClass().getResource(path);
+            if (url == null)
                 return null;
-            }
+            Image img = new ImageIcon(url).getImage().getScaledInstance(size, size, Image.SCALE_SMOOTH);
+            return new ImageIcon(img);
         } catch (Exception e) {
-            e.printStackTrace();
             return null;
         }
+    }
+
+    // Update Logics
+    public void updateTotalKeuangan() {
+        long in = 0, out = 0;
+        for (int i = 0; i < modelKeuangan.getRowCount(); i++) {
+            String type = modelKeuangan.getValueAt(i, 1).toString();
+            long val = Long.parseLong(modelKeuangan.getValueAt(i, 2).toString().replaceAll("[^\\d]", ""));
+            if (type.equals("Pemasukan"))
+                in += val;
+            else
+                out += val;
+        }
+        long bal = in - out;
+        if (keuanganPage != null)
+            keuanganPage.updateTotalLabels(bal, in, out);
+        if (dashboardPanel != null)
+            dashboardPanel.updateKeuanganLabel(bal);
+    }
+
+    public void updateTotalAnggota() {
+        int active = 0;
+        for (int i = 0; i < modelAnggota.getRowCount(); i++) {
+            if (modelAnggota.getValueAt(i, 4).toString().equalsIgnoreCase("Aktif"))
+                active++;
+        }
+        if (dashboardPanel != null)
+            dashboardPanel.updateAnggotaLabels(active, modelAnggota.getRowCount());
     }
 }

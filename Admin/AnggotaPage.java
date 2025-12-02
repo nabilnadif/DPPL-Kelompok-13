@@ -8,326 +8,234 @@ import java.awt.*;
 
 public class AnggotaPage extends JPanel {
 
-    // Kebutuhan Panel
-    private CardLayout cardLayout;
-    private JPanel panelKontenHalaman;
-    private static final String TAMPILAN_LIST = "List";
-    private static final String TAMPILAN_FORM = "Form";
+    private CardLayout cardLayout = new CardLayout();
+    private JPanel mainPanel = new JPanel(cardLayout);
 
-    // Model Data (dari MainFrame)
-    private DefaultTableModel modelAnggota;
-    private Runnable onDataChanged;
+    private DefaultTableModel model;
+    private Runnable updateCallback;
 
-    // Komponen List
-    private JTable tabelAnggota;
-    private TableRowSorter<DefaultTableModel> sorterAnggota;
+    private JTable table;
+    private TableRowSorter<DefaultTableModel> sorter;
 
-    // Komponen Form
-    private JTextField txtAnggotaNama, txtAnggotaNIM, txtAnggotaTelp, txtAnggotaEmail;
-    private JPasswordField passAnggota;
-    private JButton btnSubmitAnggota;
+    // Form Inputs
+    private JTextField tName, tNIM, tPhone, tEmail;
+    private JPasswordField tPass;
+    private JButton btnSave;
 
-    // State
-    private boolean isUpdateMode = false;
-    private int editingRowIndex = -1;
+    private boolean isEdit = false;
+    private int editRow = -1;
 
-    public AnggotaPage(DefaultTableModel modelAnggota, Runnable onDataChanged) {
-        this.modelAnggota = modelAnggota;
-        this.onDataChanged = onDataChanged;
-
-        cardLayout = new CardLayout();
-        panelKontenHalaman = new JPanel(cardLayout);
-        panelKontenHalaman.setOpaque(false);
-
-        panelKontenHalaman.add(createListPanel(), TAMPILAN_LIST);
-        panelKontenHalaman.add(createFormPanel(), TAMPILAN_FORM);
+    public AnggotaPage(DefaultTableModel model, Runnable updateCallback) {
+        this.model = model;
+        this.updateCallback = updateCallback;
 
         setLayout(new BorderLayout());
-        setBackground(MainFrame.WARNA_KONTEN_BG);
-        setBorder(new EmptyBorder(20, 20, 20, 20));
-        add(panelKontenHalaman, BorderLayout.CENTER);
+        setBackground(MainFrame.COL_CONTENT_BG);
+
+        mainPanel.setOpaque(false);
+        mainPanel.add(createListView(), "LIST");
+        mainPanel.add(createFormView(), "FORM");
+
+        add(mainPanel, BorderLayout.CENTER);
     }
 
-    // Membuat panel yang berisi Tabel
-    private JPanel createListPanel() {
-        JPanel panel = new JPanel(new BorderLayout(20, 20));
-        panel.setOpaque(false);
-        panel.add(new HeaderPanel("Manajemen Anggota UKM"), BorderLayout.NORTH);
+    private JPanel createListView() {
+        JPanel p = new JPanel(new BorderLayout(20, 20));
+        p.setOpaque(false);
+        p.setBorder(new EmptyBorder(30, 40, 30, 40));
 
-        JPanel panelKonten = new JPanel(new BorderLayout(10, 10));
-        panelKonten.setOpaque(false);
+        // Header
+        JLabel title = new JLabel("Data Anggota");
+        title.setFont(MainFrame.FONT_H1);
+        p.add(title, BorderLayout.NORTH);
 
-        JPanel panelAtas = new JPanel();
-        panelAtas.setLayout(new BoxLayout(panelAtas, BoxLayout.Y_AXIS));
-        panelAtas.setOpaque(false);
+        // Toolbar
+        JPanel toolbar = new JPanel(new BorderLayout(10, 0));
+        toolbar.setOpaque(false);
 
-        JPanel panelKontrol = new JPanel(new BorderLayout(10, 10));
-        panelKontrol.setOpaque(false);
+        // Buttons
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        btnPanel.setOpaque(false);
 
-        JPanel panelTombol = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        panelTombol.setOpaque(false);
+        JButton btnAdd = MainFrame.createButton("+ Tambah", MainFrame.COL_PRIMARY);
+        JButton btnEdit = MainFrame.createButton("Edit", new Color(245, 158, 11)); // Amber
+        JButton btnDel = MainFrame.createButton("Hapus", MainFrame.COL_DANGER);
 
-        JButton btnTambah = new JButton("+ Tambah Anggota");
-        btnTambah.setOpaque(true);
-        btnTambah.setBorderPainted(false);
-        btnTambah.setFocusPainted(false);
-        btnTambah.setFont(MainFrame.FONT_BOLD);
-        btnTambah.setBackground(MainFrame.WARNA_CARD_BG);
-        btnTambah.setForeground(MainFrame.WARNA_TEKS_PUTIH);
-        btnTambah.addActionListener(e -> {
-            setMode(false, -1);
-            cardLayout.show(panelKontenHalaman, TAMPILAN_FORM);
+        btnAdd.addActionListener(e -> openForm(false, -1));
+        btnEdit.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row != -1)
+                openForm(true, table.convertRowIndexToModel(row));
         });
-        panelTombol.add(btnTambah);
+        btnDel.addActionListener(e -> deleteData());
 
-        JButton btnUpdate = new JButton("Update Anggota");
-        btnUpdate.setOpaque(true);
-        btnUpdate.setBorderPainted(false);
-        btnUpdate.setFocusPainted(false);
-        btnUpdate.setFont(MainFrame.FONT_BOLD);
-        btnUpdate.addActionListener(e -> {
-            int selectedRow = tabelAnggota.getSelectedRow();
-            if (selectedRow == -1) {
-                JOptionPane.showMessageDialog(this, "Pilih satu baris untuk di-update.", "Error",
-                        JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            int modelRow = tabelAnggota.convertRowIndexToModel(selectedRow);
-            loadDataForUpdate(modelRow);
-            setMode(true, modelRow);
-            cardLayout.show(panelKontenHalaman, TAMPILAN_FORM);
-        });
-        panelTombol.add(btnUpdate);
+        btnPanel.add(btnAdd);
+        btnPanel.add(btnEdit);
+        btnPanel.add(btnDel);
 
-        JButton btnHapus = new JButton("Hapus Anggota");
-        btnHapus.setOpaque(true);
-        btnHapus.setBorderPainted(false);
-        btnHapus.setFocusPainted(false);
-        btnHapus.setFont(MainFrame.FONT_BOLD);
-        btnHapus.setBackground(new Color(220, 53, 69));
-        btnHapus.setForeground(MainFrame.WARNA_TEKS_PUTIH);
-        btnHapus.addActionListener(e -> {
-            int selectedRow = tabelAnggota.getSelectedRow();
-            if (selectedRow == -1) {
-                JOptionPane.showMessageDialog(this, "Pilih satu baris untuk dihapus.", "Error",
-                        JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            int modelRow = tabelAnggota.convertRowIndexToModel(selectedRow);
-            int confirm = JOptionPane.showConfirmDialog(this, "Yakin hapus data?", "Konfirmasi Hapus",
-                    JOptionPane.YES_NO_OPTION);
-            if (confirm == JOptionPane.YES_OPTION) {
-                modelAnggota.removeRow(modelRow);
-                onDataChanged.run();
-            }
-        });
-        panelTombol.add(btnHapus);
+        // Search
+        JTextField txtSearch = MainFrame.createSearchField("Cari nama/NIM...");
+        txtSearch.setPreferredSize(new Dimension(250, 35));
+        JButton btnSearch = MainFrame.createButton("Cari", MainFrame.COL_SIDEBAR_BG);
 
-        panelKontrol.add(panelTombol, BorderLayout.WEST);
-
-        JPanel panelCari = new JPanel(new BorderLayout(5, 5));
-        panelCari.setOpaque(false);
-        final JTextField txtCari = MainFrame.createSearchField("Pencarian data anggota...");
-
-        tabelAnggota = new JTable(modelAnggota);
-        tabelAnggota.setFont(MainFrame.FONT_NORMAL);
-        tabelAnggota.setRowHeight(30);
-        tabelAnggota.getTableHeader().setFont(MainFrame.FONT_BOLD);
-        tabelAnggota.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
-        sorterAnggota = new TableRowSorter<>(modelAnggota);
-        tabelAnggota.setRowSorter(sorterAnggota);
-
-        JButton btnCari = new JButton("Cari");
-        btnCari.setOpaque(true);
-        btnCari.setBorderPainted(false);
-        btnCari.setFocusPainted(false);
-        btnCari.addActionListener(e -> {
-            String teks = txtCari.getText();
-            if (teks.equals("Pencarian data anggota...") || teks.trim().length() == 0) {
-                sorterAnggota.setRowFilter(null);
-            } else {
-                sorterAnggota.setRowFilter(RowFilter.regexFilter("(?i)" + teks));
-            }
+        btnSearch.addActionListener(e -> {
+            String text = txtSearch.getText();
+            if (text.length() == 0 || text.equals("Cari nama/NIM..."))
+                sorter.setRowFilter(null);
+            else
+                sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
         });
 
-        panelCari.add(txtCari, BorderLayout.CENTER);
-        panelCari.add(btnCari, BorderLayout.EAST);
+        JPanel searchP = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+        searchP.setOpaque(false);
+        searchP.add(txtSearch);
+        searchP.add(btnSearch);
 
-        // Perubahan layout v9
-        panelKontrol.add(panelCari, BorderLayout.CENTER);
-        panelKontrol.setMaximumSize(new Dimension(Integer.MAX_VALUE, panelKontrol.getPreferredSize().height));
+        toolbar.add(btnPanel, BorderLayout.WEST);
+        toolbar.add(searchP, BorderLayout.EAST);
 
-        panelAtas.add(panelKontrol);
-        panelKonten.add(panelAtas, BorderLayout.NORTH);
+        // Wrapper for Toolbar to add spacing
+        JPanel topWrapper = new JPanel(new BorderLayout());
+        topWrapper.setOpaque(false);
+        topWrapper.add(title, BorderLayout.NORTH);
+        topWrapper.add(Box.createVerticalStrut(20), BorderLayout.CENTER);
+        topWrapper.add(toolbar, BorderLayout.SOUTH);
 
-        panelKonten.add(new JScrollPane(tabelAnggota), BorderLayout.CENTER);
+        p.add(topWrapper, BorderLayout.NORTH);
 
-        panel.add(panelKonten, BorderLayout.CENTER);
-        return panel;
+        // Table
+        table = new JTable(model);
+        MainFrame.decorateTable(table);
+        sorter = new TableRowSorter<>(model);
+        table.setRowSorter(sorter);
+
+        JScrollPane scroll = new JScrollPane(table);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.getViewport().setBackground(Color.WHITE);
+
+        p.add(scroll, BorderLayout.CENTER);
+        return p;
     }
 
-    // Membuat panel yang berisi Formulir Tambah/Update
-    private JPanel createFormPanel() {
-        JPanel panel = new JPanel(new BorderLayout(20, 20));
-        panel.setOpaque(false);
-        panel.add(new HeaderPanel("Manajemen Anggota UKM"), BorderLayout.NORTH);
+    private JPanel createFormView() {
+        JPanel p = new JPanel(new GridBagLayout());
+        p.setOpaque(false);
 
-        JPanel panelForm = new JPanel();
-        panelForm.setLayout(new BoxLayout(panelForm, BoxLayout.Y_AXIS));
-        panelForm.setOpaque(false);
-        panelForm.setBorder(new EmptyBorder(10, 10, 10, 10));
+        JPanel formCard = new JPanel();
+        formCard.setLayout(new BoxLayout(formCard, BoxLayout.Y_AXIS));
+        formCard.setBackground(Color.WHITE);
+        formCard.setBorder(new EmptyBorder(30, 40, 30, 40));
 
-        txtAnggotaNama = new JTextField();
-        txtAnggotaNIM = new JTextField();
-        txtAnggotaTelp = new JTextField();
-        txtAnggotaEmail = new JTextField();
-        passAnggota = new JPasswordField();
+        JLabel title = new JLabel("Formulir Anggota");
+        title.setFont(MainFrame.FONT_H2);
+        title.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        panelForm.add(MainFrame.buatLabelField("Nama Anggota *"));
-        panelForm.add(txtAnggotaNama);
-        panelForm.add(Box.createRigidArea(new Dimension(0, 15)));
-        panelForm.add(MainFrame.buatLabelField("NIM (Nomor Induk Mahasiswa) Anggota *"));
-        panelForm.add(txtAnggotaNIM);
-        panelForm.add(Box.createRigidArea(new Dimension(0, 15)));
-        panelForm.add(MainFrame.buatLabelField("Nomor telepon anggota *"));
-        panelForm.add(txtAnggotaTelp);
-        panelForm.add(Box.createRigidArea(new Dimension(0, 15)));
-        panelForm.add(MainFrame.buatLabelField("Email Anggota *"));
-        panelForm.add(txtAnggotaEmail);
-        panelForm.add(Box.createRigidArea(new Dimension(0, 15)));
-        panelForm.add(MainFrame.buatLabelField("Password akun anggota *"));
-        panelForm.add(passAnggota);
-        panelForm.add(Box.createRigidArea(new Dimension(0, 20)));
+        tName = new JTextField();
+        tNIM = new JTextField();
+        tPhone = new JTextField();
+        tEmail = new JTextField();
+        tPass = new JPasswordField();
 
-        JPanel panelTombol = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        panelTombol.setOpaque(false);
-        btnSubmitAnggota = new JButton("+ Tambah Anggota");
-        btnSubmitAnggota.setOpaque(true);
-        btnSubmitAnggota.setBorderPainted(false);
-        btnSubmitAnggota.setFocusPainted(false);
-        btnSubmitAnggota.setFont(MainFrame.FONT_BOLD);
-        btnSubmitAnggota.setBackground(MainFrame.WARNA_CARD_BG);
-        btnSubmitAnggota.setForeground(MainFrame.WARNA_TEKS_PUTIH);
+        formCard.add(title);
+        formCard.add(Box.createVerticalStrut(20));
 
-        btnSubmitAnggota.addActionListener(e -> submitForm());
+        addInput(formCard, "Nama Lengkap", tName);
+        addInput(formCard, "NIM", tNIM);
+        addInput(formCard, "No. Telepon", tPhone);
+        addInput(formCard, "Email", tEmail);
+        addInput(formCard, "Password", tPass);
 
-        JButton btnBatal = new JButton("Batal");
-        btnBatal.setOpaque(true);
-        btnBatal.setBorderPainted(false);
-        btnBatal.setFocusPainted(false);
-        btnBatal.setFont(MainFrame.FONT_BOLD);
-        btnBatal.addActionListener(e -> {
-            cardLayout.show(panelKontenHalaman, TAMPILAN_LIST);
-        });
+        JPanel btnP = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        btnP.setBackground(Color.WHITE);
 
-        panelTombol.add(btnBatal);
-        panelTombol.add(btnSubmitAnggota);
+        JButton btnCancel = MainFrame.createButton("Batal", Color.GRAY);
+        btnSave = MainFrame.createButton("Simpan", MainFrame.COL_SUCCESS);
 
-        panelForm.add(panelTombol);
-        panelForm.add(Box.createVerticalGlue());
+        btnCancel.addActionListener(e -> cardLayout.show(mainPanel, "LIST"));
+        btnSave.addActionListener(e -> saveData());
 
-        JPanel wrapperForm = new JPanel(new BorderLayout());
-        wrapperForm.setOpaque(false);
-        wrapperForm.add(panelForm, BorderLayout.NORTH);
+        btnP.add(btnCancel);
+        btnP.add(btnSave);
+        btnP.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        panel.add(wrapperForm, BorderLayout.CENTER);
-        return panel;
+        formCard.add(Box.createVerticalStrut(10));
+        formCard.add(btnP);
+
+        p.add(formCard);
+        return p;
     }
 
-    private void submitForm() {
-        if (txtAnggotaNama.getText().isEmpty() || txtAnggotaNIM.getText().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Nama dan NIM wajib diisi.", "Error", JOptionPane.ERROR_MESSAGE);
+    private void addInput(JPanel p, String label, JComponent field) {
+        JLabel l = new JLabel(label);
+        l.setFont(MainFrame.FONT_BOLD);
+        l.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        field.setMaximumSize(new Dimension(400, 35));
+        field.setPreferredSize(new Dimension(400, 35));
+        field.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        p.add(l);
+        p.add(Box.createVerticalStrut(5));
+        p.add(field);
+        p.add(Box.createVerticalStrut(15));
+    }
+
+    private void openForm(boolean edit, int row) {
+        isEdit = edit;
+        editRow = row;
+        btnSave.setText(edit ? "Update Data" : "Simpan Data");
+
+        if (edit) {
+            tName.setText(model.getValueAt(row, 0).toString());
+            tNIM.setText(model.getValueAt(row, 1).toString());
+            tPhone.setText(model.getValueAt(row, 2).toString());
+            tEmail.setText(model.getValueAt(row, 3).toString());
+        } else {
+            tName.setText("");
+            tNIM.setText("");
+            tPhone.setText("");
+            tEmail.setText("");
+            tPass.setText("");
+        }
+        cardLayout.show(mainPanel, "FORM");
+    }
+
+    private void saveData() {
+        if (tName.getText().isEmpty() || tNIM.getText().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Nama & NIM wajib diisi!");
             return;
         }
-        String inputNIM = txtAnggotaNIM.getText().trim();
 
-        for (int i = 0; i < modelAnggota.getRowCount(); i++) {
-
-            if (isUpdateMode && i == editingRowIndex) {
+        // Logika Cek Duplikat NIM
+        String inputNIM = tNIM.getText().trim();
+        for (int i = 0; i < model.getRowCount(); i++) {
+            if (isEdit && i == editRow)
                 continue;
-            }
-
-            String existingNIM = modelAnggota.getValueAt(i, 1).toString();
-
-            if (existingNIM.equalsIgnoreCase(inputNIM)) {
-                JOptionPane.showMessageDialog(this,
-                        "Gagal! Anggota dengan NIM " + inputNIM + " sudah terdaftar.",
-                        "Data Duplikat",
-                        JOptionPane.WARNING_MESSAGE);
+            if (model.getValueAt(i, 1).toString().equalsIgnoreCase(inputNIM)) {
+                JOptionPane.showMessageDialog(this, "NIM Sudah terdaftar!", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
         }
 
-        Object[] rowData = {
-                txtAnggotaNama.getText(),
-                txtAnggotaNIM.getText(),
-                txtAnggotaTelp.getText(),
-                txtAnggotaEmail.getText(),
-                "Aktif" // Status default
-        };
+        Object[] row = { tName.getText(), inputNIM, tPhone.getText(), tEmail.getText(), "Aktif" };
 
-        if (isUpdateMode) {
-            for (int i = 0; i < rowData.length; i++) {
-                modelAnggota.setValueAt(rowData[i], editingRowIndex, i);
-            }
-            JOptionPane.showMessageDialog(this, "Data anggota berhasil di-update!");
+        if (isEdit) {
+            for (int i = 0; i < row.length; i++)
+                model.setValueAt(row[i], editRow, i);
         } else {
-            modelAnggota.addRow(rowData);
-            JOptionPane.showMessageDialog(this, "Anggota baru berhasil ditambahkan!");
+            model.addRow(row);
         }
-
-        onDataChanged.run(); // Panggil callback untuk update total
-        clearForm();
-        cardLayout.show(panelKontenHalaman, TAMPILAN_LIST);
+        updateCallback.run();
+        cardLayout.show(mainPanel, "LIST");
     }
 
-    private void setMode(boolean update, int rowIndex) {
-        this.isUpdateMode = update;
-        this.editingRowIndex = rowIndex;
-        btnSubmitAnggota.setText(update ? "Update Data Anggota" : "+ Tambah Anggota");
-        if (!update) {
-            clearForm();
-        }
-    }
-
-    private void loadDataForUpdate(int modelRow) {
-        txtAnggotaNama.setText(modelAnggota.getValueAt(modelRow, 0).toString());
-        txtAnggotaNIM.setText(modelAnggota.getValueAt(modelRow, 1).toString());
-        txtAnggotaTelp.setText(modelAnggota.getValueAt(modelRow, 2).toString());
-        txtAnggotaEmail.setText(modelAnggota.getValueAt(modelRow, 3).toString());
-        passAnggota.setText("");
-    }
-
-    private void clearForm() {
-        txtAnggotaNama.setText("");
-        txtAnggotaNIM.setText("");
-        txtAnggotaTelp.setText("");
-        txtAnggotaEmail.setText("");
-        passAnggota.setText("");
-    }
-
-    // Inner class untuk Header Panel
-    private class HeaderPanel extends JPanel {
-        public HeaderPanel(String judulHalaman) {
-            setLayout(new BorderLayout());
-            setOpaque(false);
-            setBorder(new EmptyBorder(0, 0, 15, 0));
-            JLabel lblJudul = new JLabel(judulHalaman);
-            lblJudul.setFont(MainFrame.FONT_JUDUL);
-            lblJudul.setForeground(MainFrame.WARNA_TEKS_HITAM);
-            add(lblJudul, BorderLayout.WEST);
-            JPanel panelUser = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-            panelUser.setOpaque(false);
-
-            ImageIcon bellIcon = MainFrame.loadIcon("/icons/Bell.png", 24, 24);
-            JLabel lblNotif = new JLabel(bellIcon);
-
-            JLabel lblUser = new JLabel("Gusti Panji W. [v]");
-            lblUser.setFont(MainFrame.FONT_BOLD);
-            panelUser.add(lblNotif);
-            panelUser.add(lblUser);
-            add(panelUser, BorderLayout.EAST);
+    private void deleteData() {
+        int r = table.getSelectedRow();
+        if (r == -1)
+            return;
+        if (JOptionPane.showConfirmDialog(this, "Hapus data ini?", "Konfirmasi", JOptionPane.YES_NO_OPTION) == 0) {
+            model.removeRow(table.convertRowIndexToModel(r));
+            updateCallback.run();
         }
     }
 }
