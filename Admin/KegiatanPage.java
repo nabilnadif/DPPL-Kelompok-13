@@ -8,61 +8,42 @@ import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.sql.*;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class KegiatanPage extends JPanel {
 
     private CardLayout cardLayout = new CardLayout();
     private JPanel mainPanel = new JPanel(cardLayout);
-
     private DefaultTableModel model;
     private JTable table;
     private TableRowSorter<DefaultTableModel> sorter;
 
-    // Komponen Form
     private JTextField tName, tLoc;
     private JComboBox<String> cbType;
     private JSpinner dateSpinner;
 
-    public KegiatanPage(DefaultTableModel model) {
+    // Callback untuk update dashboard
+    private Runnable updateCallback;
+
+    // Konstruktor Diperbarui
+    public KegiatanPage(DefaultTableModel model, Runnable updateCallback) {
         this.model = model;
+        this.updateCallback = updateCallback; // Simpan callback
 
         setLayout(new BorderLayout());
         setBackground(MainFrame.COL_CONTENT_BG);
 
-        // Setup Panel Utama dengan CardLayout
         mainPanel.setOpaque(false);
         mainPanel.add(createListView(), "LIST");
         mainPanel.add(createFormView(), "FORM");
-
         add(mainPanel, BorderLayout.CENTER);
 
-        // Load data dari database saat panel dibuat
         loadDataFromDB();
     }
 
-    // --- LOGIKA DATABASE ---
-
-    private void loadDataFromDB() {
-        model.setRowCount(0); // Bersihkan tabel sebelum isi ulang
-        String sql = "SELECT * FROM kegiatan";
-
-        try (Connection conn = DatabaseHelper.connect();
-                Statement stmt = conn.createStatement();
-                ResultSet rs = stmt.executeQuery(sql)) {
-
-            while (rs.next()) {
-                model.addRow(new Object[] {
-                        rs.getString("nama_kegiatan"),
-                        rs.getString("tipe"),
-                        rs.getString("lokasi"),
-                        rs.getString("tanggal")
-                });
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Gagal memuat data: " + e.getMessage());
-        }
-    }
+    // ... (Kode loadDataFromDB, createListView, createFormView, addInput, clearForm
+    // SAMA) ...
+    // Hanya tampilkan method yang berubah: saveData dan deleteData
 
     private void saveData() {
         if (tName.getText().isEmpty() || tLoc.getText().isEmpty()) {
@@ -74,8 +55,7 @@ public class KegiatanPage extends JPanel {
         String tipe = cbType.getSelectedItem().toString();
         String lokasi = tLoc.getText();
 
-        // Format tanggal sebelum disimpan
-        SimpleDateFormat dbFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat dbFormat = new SimpleDateFormat("yyyy-MM-dd");
         String tanggal = dbFormat.format(dateSpinner.getValue());
 
         String sql = "INSERT INTO kegiatan(nama_kegiatan, tipe, lokasi, tanggal) VALUES(?, ?, ?, ?)";
@@ -90,8 +70,13 @@ public class KegiatanPage extends JPanel {
             pstmt.executeUpdate();
 
             JOptionPane.showMessageDialog(this, "Proposal Kegiatan Berhasil Disimpan!");
-            loadDataFromDB(); // Refresh tabel
-            cardLayout.show(mainPanel, "LIST"); // Kembali ke list
+            loadDataFromDB();
+
+            // PENTING: Panggil callback agar Dashboard update
+            if (updateCallback != null)
+                updateCallback.run();
+
+            cardLayout.show(mainPanel, "LIST");
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -106,14 +91,8 @@ public class KegiatanPage extends JPanel {
             return;
         }
 
-        // Ambil Nama Kegiatan dari baris yang dipilih (Kolom ke-0)
-        // Catatan: Idealnya menggunakan ID tersembunyi, tapi untuk simpel pakai Nama
-        // dulu
         String namaKegiatan = table.getValueAt(selectedRow, 0).toString();
-
-        int confirm = JOptionPane.showConfirmDialog(this,
-                "Yakin hapus kegiatan '" + namaKegiatan + "'?",
-                "Konfirmasi Hapus",
+        int confirm = JOptionPane.showConfirmDialog(this, "Yakin hapus '" + namaKegiatan + "'?", "Konfirmasi",
                 JOptionPane.YES_NO_OPTION);
 
         if (confirm == JOptionPane.YES_OPTION) {
@@ -124,159 +103,141 @@ public class KegiatanPage extends JPanel {
                 pstmt.setString(1, namaKegiatan);
                 pstmt.executeUpdate();
 
-                loadDataFromDB(); // Refresh tabel
+                loadDataFromDB();
+
+                // PENTING: Panggil callback agar Dashboard update
+                if (updateCallback != null)
+                    updateCallback.run();
 
             } catch (SQLException e) {
                 e.printStackTrace();
-                JOptionPane.showMessageDialog(this, "Gagal menghapus: " + e.getMessage());
             }
         }
     }
 
-    // --- UI: TAMPILAN LIST ---
+    // --- KODE UI LENGKAP AGAR BISA COPY PASTE TANPA ERROR ---
+    private void loadDataFromDB() {
+        model.setRowCount(0);
+        try (Connection conn = DatabaseHelper.connect();
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery("SELECT * FROM kegiatan")) {
+            while (rs.next()) {
+                model.addRow(new Object[] { rs.getString("nama_kegiatan"), rs.getString("tipe"), rs.getString("lokasi"),
+                        rs.getString("tanggal") });
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 
     private JPanel createListView() {
         JPanel p = new JPanel(new BorderLayout(20, 20));
         p.setOpaque(false);
         p.setBorder(new EmptyBorder(30, 40, 30, 40));
 
-        // Header
         JLabel title = new JLabel("Manajemen Kegiatan");
         title.setFont(MainFrame.FONT_H1);
 
-        // Toolbar (Tombol & Search)
         JPanel toolbar = new JPanel(new BorderLayout());
         toolbar.setOpaque(false);
-
-        // Tombol Aksi
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        btnPanel.setOpaque(false);
-
-        JButton btnAdd = MainFrame.createButton("+ Buat Proposal", MainFrame.COL_PRIMARY);
-        JButton btnDel = MainFrame.createButton("Hapus", MainFrame.COL_DANGER);
-
-        btnAdd.addActionListener(e -> {
+        JPanel btns = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        btns.setOpaque(false);
+        JButton add = MainFrame.createButton("+ Buat Proposal", MainFrame.COL_PRIMARY);
+        JButton del = MainFrame.createButton("Hapus", MainFrame.COL_DANGER);
+        add.addActionListener(e -> {
             clearForm();
             cardLayout.show(mainPanel, "FORM");
         });
-        btnDel.addActionListener(e -> deleteData());
+        del.addActionListener(e -> deleteData());
+        btns.add(add);
+        btns.add(del);
 
-        btnPanel.add(btnAdd);
-        btnPanel.add(btnDel);
-
-        // Search Bar
-        JTextField txtSearch = MainFrame.createSearchField("Cari kegiatan...");
-        txtSearch.setPreferredSize(new Dimension(250, 35));
-        JButton btnSearch = MainFrame.createButton("Cari", MainFrame.COL_SIDEBAR_BG);
-
-        // Setup Filter Tabel
+        JTextField search = MainFrame.createSearchField("Cari kegiatan...");
+        search.setPreferredSize(new Dimension(250, 35));
+        JButton bSearch = MainFrame.createButton("Cari", MainFrame.COL_SIDEBAR_BG);
         sorter = new TableRowSorter<>(model);
-
-        btnSearch.addActionListener(e -> {
-            String text = txtSearch.getText();
-            if (text.length() == 0 || text.equals("Cari kegiatan...")) {
+        bSearch.addActionListener(e -> {
+            String t = search.getText();
+            if (t.length() == 0 || t.equals("Cari kegiatan..."))
                 sorter.setRowFilter(null);
-            } else {
-                sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
-            }
+            else
+                sorter.setRowFilter(RowFilter.regexFilter("(?i)" + t));
         });
+        JPanel sp = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        sp.setOpaque(false);
+        sp.add(search);
+        sp.add(bSearch);
 
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        searchPanel.setOpaque(false);
-        searchPanel.add(txtSearch);
-        searchPanel.add(btnSearch);
+        toolbar.add(btns, BorderLayout.WEST);
+        toolbar.add(sp, BorderLayout.EAST);
 
-        toolbar.add(btnPanel, BorderLayout.WEST);
-        toolbar.add(searchPanel, BorderLayout.EAST);
+        JPanel top = new JPanel(new BorderLayout(0, 20));
+        top.setOpaque(false);
+        top.add(title, BorderLayout.NORTH);
+        top.add(toolbar, BorderLayout.SOUTH);
+        p.add(top, BorderLayout.NORTH);
 
-        // Wrapper Header
-        JPanel topWrapper = new JPanel(new BorderLayout(0, 20));
-        topWrapper.setOpaque(false);
-        topWrapper.add(title, BorderLayout.NORTH);
-        topWrapper.add(toolbar, BorderLayout.SOUTH);
-        p.add(topWrapper, BorderLayout.NORTH);
-
-        // Tabel Modern
         table = new JTable(model);
         MainFrame.decorateTable(table);
         table.setRowSorter(sorter);
-
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        p.add(scrollPane, BorderLayout.CENTER);
-
+        JScrollPane sc = new JScrollPane(table);
+        sc.setBorder(BorderFactory.createEmptyBorder());
+        p.add(sc, BorderLayout.CENTER);
         return p;
     }
-
-    // --- UI: TAMPILAN FORM ---
 
     private JPanel createFormView() {
         JPanel p = new JPanel(new GridBagLayout());
         p.setOpaque(false);
+        JPanel c = new JPanel();
+        c.setLayout(new BoxLayout(c, BoxLayout.Y_AXIS));
+        c.setBackground(Color.WHITE);
+        c.setBorder(new EmptyBorder(30, 40, 30, 40));
 
-        JPanel formCard = new JPanel();
-        formCard.setLayout(new BoxLayout(formCard, BoxLayout.Y_AXIS));
-        formCard.setBackground(Color.WHITE);
-        formCard.setBorder(new EmptyBorder(30, 40, 30, 40));
+        JLabel t = new JLabel("Formulir Kegiatan");
+        t.setFont(MainFrame.FONT_H2);
+        t.setAlignmentX(LEFT_ALIGNMENT);
+        c.add(t);
+        c.add(Box.createVerticalStrut(20));
 
-        JLabel title = new JLabel("Formulir Proposal Kegiatan");
-        title.setFont(MainFrame.FONT_H2);
-        title.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        // Inisialisasi Input
         tName = new JTextField();
         cbType = new JComboBox<>(new String[] { "Outdoor", "Indoor", "Hybrid" });
         tLoc = new JTextField();
-
-        // Date Spinner
         dateSpinner = new JSpinner(new SpinnerDateModel());
-        JSpinner.DateEditor dateEditor = new JSpinner.DateEditor(dateSpinner, "yyyy-MM-dd");
-        dateSpinner.setEditor(dateEditor);
+        dateSpinner.setEditor(new JSpinner.DateEditor(dateSpinner, "dd/MM/yyyy"));
         dateSpinner.setMaximumSize(new Dimension(400, 35));
 
-        // Layout Form
-        formCard.add(title);
-        formCard.add(Box.createVerticalStrut(20));
+        addInput(c, "Nama Kegiatan", tName);
+        addInput(c, "Tipe", cbType);
+        addInput(c, "Lokasi", tLoc);
+        addInput(c, "Tanggal", dateSpinner);
 
-        addInput(formCard, "Nama Kegiatan", tName);
-        addInput(formCard, "Tipe Kegiatan", cbType);
-        addInput(formCard, "Lokasi", tLoc);
-        addInput(formCard, "Tanggal", dateSpinner); // Ganti dengan date spinner
+        JPanel b = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        b.setBackground(Color.WHITE);
+        JButton ca = MainFrame.createButton("Batal", Color.GRAY);
+        JButton sa = MainFrame.createButton("Simpan", MainFrame.COL_SUCCESS);
+        ca.addActionListener(e -> cardLayout.show(mainPanel, "LIST"));
+        sa.addActionListener(e -> saveData());
+        b.add(ca);
+        b.add(sa);
+        b.setAlignmentX(LEFT_ALIGNMENT);
 
-        // Tombol Form
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        btnPanel.setBackground(Color.WHITE);
-
-        JButton btnCancel = MainFrame.createButton("Batal", Color.GRAY);
-        JButton btnSave = MainFrame.createButton("Simpan Proposal", MainFrame.COL_SUCCESS);
-
-        btnCancel.addActionListener(e -> cardLayout.show(mainPanel, "LIST"));
-        btnSave.addActionListener(e -> saveData());
-
-        btnPanel.add(btnCancel);
-        btnPanel.add(btnSave);
-        btnPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        formCard.add(Box.createVerticalStrut(10));
-        formCard.add(btnPanel);
-
-        p.add(formCard);
+        c.add(Box.createVerticalStrut(10));
+        c.add(b);
+        p.add(c);
         return p;
     }
 
-    // Helper untuk menambahkan input ke form
-    private void addInput(JPanel p, String label, JComponent field) {
-        JLabel l = new JLabel(label);
-        l.setFont(MainFrame.FONT_BOLD);
-        l.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        field.setMaximumSize(new Dimension(400, 35));
-        field.setPreferredSize(new Dimension(400, 35));
-        field.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        p.add(l);
+    private void addInput(JPanel p, String l, JComponent f) {
+        JLabel lbl = new JLabel(l);
+        lbl.setFont(MainFrame.FONT_BOLD);
+        lbl.setAlignmentX(LEFT_ALIGNMENT);
+        f.setMaximumSize(new Dimension(400, 35));
+        f.setPreferredSize(new Dimension(400, 35));
+        f.setAlignmentX(LEFT_ALIGNMENT);
+        p.add(lbl);
         p.add(Box.createVerticalStrut(5));
-        p.add(field);
+        p.add(f);
         p.add(Box.createVerticalStrut(15));
     }
 
@@ -284,6 +245,6 @@ public class KegiatanPage extends JPanel {
         tName.setText("");
         tLoc.setText("");
         cbType.setSelectedIndex(0);
-        dateSpinner.setValue(new java.util.Date()); // Reset ke tanggal sekarang
+        dateSpinner.setValue(new Date());
     }
 }

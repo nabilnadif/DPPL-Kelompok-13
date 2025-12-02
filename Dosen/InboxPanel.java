@@ -1,4 +1,4 @@
-package Member;
+package Dosen;
 
 import Utils.DatabaseHelper;
 import javax.swing.*;
@@ -22,7 +22,7 @@ public class InboxPanel extends JPanel {
         setBorder(new EmptyBorder(30, 40, 30, 40));
 
         // Header
-        JLabel title = new JLabel("Inbox Pengumuman");
+        JLabel title = new JLabel("Kotak Masuk Pengumuman");
         title.setFont(MainFrame.FONT_H1);
         title.setForeground(MainFrame.COL_TEXT_DARK);
         add(title, BorderLayout.NORTH);

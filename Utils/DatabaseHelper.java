@@ -66,6 +66,7 @@ public class DatabaseHelper {
 
             // Seed Data Admin Default (Jika belum ada)
             createDefaultAdmin(conn);
+            createDefaultDosen(conn);
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -84,6 +85,25 @@ public class DatabaseHelper {
                     pstmt.setString(4, "Administrator UKM");
                     pstmt.executeUpdate();
                     System.out.println("Admin default dibuat.");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void createDefaultDosen(Connection conn) {
+        String sqlCheck = "SELECT count(*) FROM users WHERE username = 'dosen'";
+        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sqlCheck)) {
+            if (rs.next() && rs.getInt(1) == 0) {
+                String sqlInsert = "INSERT INTO users(username, password, role, nama_lengkap) VALUES(?, ?, ?, ?)";
+                try (PreparedStatement pstmt = conn.prepareStatement(sqlInsert)) {
+                    pstmt.setString(1, "dosen");
+                    pstmt.setString(2, "dosen123");
+                    pstmt.setString(3, "Dosen");
+                    pstmt.setString(4, "Dosen UKM");
+                    pstmt.executeUpdate();
+                    System.out.println("Dosen default dibuat.");
                 }
             }
         } catch (SQLException e) {

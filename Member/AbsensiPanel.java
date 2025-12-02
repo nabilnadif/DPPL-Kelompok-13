@@ -4,18 +4,18 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import Admin.MainFrame;
 import Utils.DatabaseHelper;
 
 public class AbsensiPanel extends JPanel {
+
+    private JTable table;
+    private DefaultTableModel model;
     private String username;
 
     public AbsensiPanel(String username) {
-        this.username = username; // Simpan username pengguna yang login
+        this.username = username;
 
         setLayout(new BorderLayout(20, 20));
         setBackground(MainFrame.COL_CONTENT_BG);
@@ -25,38 +25,48 @@ public class AbsensiPanel extends JPanel {
         title.setFont(MainFrame.FONT_H1);
         add(title, BorderLayout.NORTH);
 
-        String[] cols = { "Tanggal Masuk", "Tanggal Keluar", "Kegiatan" };
-        DefaultTableModel model = new DefaultTableModel(cols, 0);
-        JTable table = new JTable(model);
+        // Sesuaikan kolom dengan tabel absensi
+        String[] cols = { "Nama Kegiatan", "Waktu Masuk", "Waktu Keluar" };
+        model = new DefaultTableModel(null, cols) {
+            @Override
+            public boolean isCellEditable(int r, int c) {
+                return false;
+            }
+        };
+
+        table = new JTable(model);
         MainFrame.decorateTable(table);
 
         JScrollPane sc = new JScrollPane(table);
         sc.setBorder(BorderFactory.createEmptyBorder());
         add(sc, BorderLayout.CENTER);
 
-        loadAbsensiData(model); // Muat data absensi ke tabel
+        loadAbsensiData();
     }
 
-    public void loadAbsensiData(DefaultTableModel model) {
-        String sql = "SELECT nama_kegiatan, tanggal_masuk, tanggal_keluar FROM absensi WHERE username = ? ORDER BY tanggal_masuk DESC";
+    // Method REFRESH
+    public void loadAbsensiData() {
+        model.setRowCount(0);
+
+        // Query langsung ke tabel absensi
+        String sql = "SELECT nama_kegiatan, tanggal_masuk, tanggal_keluar FROM absensi WHERE username = ? ORDER BY id DESC";
 
         try (Connection conn = DatabaseHelper.connect();
                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            pstmt.setString(1, username); // Gunakan username yang diteruskan
+            pstmt.setString(1, username);
             ResultSet rs = pstmt.executeQuery();
 
             while (rs.next()) {
-                String namaKegiatan = rs.getString("nama_kegiatan");
-                String tanggalMasuk = rs.getString("tanggal_masuk");
-                String tanggalKeluar = rs.getString("tanggal_keluar");
-
-                // Tambahkan data ke tabel
-                model.addRow(new Object[] { tanggalMasuk, tanggalKeluar, namaKegiatan });
+                String keluar = rs.getString("tanggal_keluar");
+                model.addRow(new Object[] {
+                        rs.getString("nama_kegiatan"),
+                        rs.getString("tanggal_masuk"),
+                        (keluar == null) ? "-" : keluar
+                });
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Gagal memuat data absensi: " + e.getMessage());
         }
     }
 }

@@ -17,7 +17,7 @@ public class DashboardPanel extends JPanel {
     private MainFrame mainFrame;
     private CardLayout cl;
     private JPanel cp;
-    private JPanel schedulePanel; // Add this line
+    private JPanel schedulePanel;
 
     public DashboardPanel(MainFrame mainFrame, CardLayout cl, JPanel cp) {
         this.mainFrame = mainFrame;
@@ -70,7 +70,7 @@ public class DashboardPanel extends JPanel {
         JPanel p = new JPanel(new BorderLayout());
         p.setOpaque(false);
 
-        JLabel title = new JLabel("Selamat Pagi!");
+        JLabel title = new JLabel("Selamat Pagi, Gusti!");
         title.setFont(MainFrame.FONT_H1);
         title.setForeground(MainFrame.COL_TEXT_DARK);
 
@@ -85,6 +85,17 @@ public class DashboardPanel extends JPanel {
 
         p.add(text, BorderLayout.WEST);
 
+        // Profile Badge
+        JLabel profile = new JLabel("Gusti Panji W.");
+        try {
+            ImageIcon ic = new ImageIcon(getClass().getResource("/icons/user.png"));
+            profile.setIcon(new ImageIcon(ic.getImage().getScaledInstance(40, 40, Image.SCALE_SMOOTH)));
+        } catch (Exception e) {
+        }
+        profile.setFont(MainFrame.FONT_BOLD);
+        profile.setIconTextGap(15);
+        p.add(profile, BorderLayout.EAST);
+
         return p;
     }
 
@@ -92,15 +103,13 @@ public class DashboardPanel extends JPanel {
         JPanel card = new JPanel(new BorderLayout());
         card.setBackground(Color.WHITE);
         card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(226, 232, 240), 1), // Subtle border
+                BorderFactory.createLineBorder(new Color(226, 232, 240), 1),
                 new EmptyBorder(20, 20, 20, 20)));
 
-        // Title
         JLabel lblTitle = new JLabel(title);
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 14));
         lblTitle.setForeground(MainFrame.COL_TEXT_MUTED);
 
-        // Value
         valueLbl.setFont(new Font("Segoe UI", Font.BOLD, 22));
         valueLbl.setForeground(MainFrame.COL_TEXT_DARK);
 
@@ -109,7 +118,6 @@ public class DashboardPanel extends JPanel {
         textP.add(lblTitle);
         textP.add(valueLbl);
 
-        // Icon Box
         JLabel icon = new JLabel();
         try {
             ImageIcon ic = new ImageIcon(getClass().getResource(iconPath));
@@ -120,7 +128,6 @@ public class DashboardPanel extends JPanel {
         card.add(textP, BorderLayout.CENTER);
         card.add(icon, BorderLayout.EAST);
 
-        // Border Bottom Accent
         JPanel line = new JPanel();
         line.setPreferredSize(new Dimension(0, 4));
         line.setBackground(accent);
@@ -128,6 +135,7 @@ public class DashboardPanel extends JPanel {
 
         card.setCursor(new Cursor(Cursor.HAND_CURSOR));
         card.addMouseListener(new MouseAdapter() {
+            @Override
             public void mouseClicked(MouseEvent e) {
                 action.run();
             }
@@ -148,24 +156,13 @@ public class DashboardPanel extends JPanel {
         h.setFont(MainFrame.FONT_H2);
         h.setForeground(MainFrame.COL_TEXT_DARK);
 
-        JPanel content = new JPanel(new GridLayout(1, 2));
-        content.setOpaque(false);
-
-        JLabel title = new JLabel("Latihan Futsal Mingguan");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        title.setForeground(MainFrame.COL_PRIMARY);
-
-        JLabel date = new JLabel("Minggu, 2 Nov 2025 • 08:00 WIB");
-        date.setFont(MainFrame.FONT_BODY);
-
-        JPanel info = new JPanel(new GridLayout(2, 1));
-        info.setOpaque(false);
-        info.add(title);
-        info.add(date);
+        // Kontainer isi jadwal (akan diisi dinamis)
+        schedulePanel = new JPanel(new BorderLayout());
+        schedulePanel.setOpaque(false);
 
         p.add(h, BorderLayout.NORTH);
         p.add(Box.createVerticalStrut(15), BorderLayout.CENTER); // Spacer
-        p.add(info, BorderLayout.SOUTH);
+        p.add(schedulePanel, BorderLayout.SOUTH);
 
         return p;
     }
@@ -174,70 +171,89 @@ public class DashboardPanel extends JPanel {
         cl.show(cp, panelName);
         mainFrame.setTombolSidebarAktif(panelName);
 
-        // Refresh data di DashboardPanel setiap kali berpindah ke dashboard
+        // Opsional: refresh juga saat navigasi internal
         if (panelName.equals(MainFrame.PANEL_DASHBOARD)) {
-            loadNearestSchedule(); // Panggil metode untuk memuat jadwal terbaru
+            loadNearestSchedule();
         }
     }
 
     public void updateKeuanganLabel(long bal) {
-        lblUang.setText(MainFrame.formatRupiah(bal, "Balance"));
+        if (lblUang != null)
+            lblUang.setText(MainFrame.formatRupiah(bal, "Balance"));
     }
 
     public void updateAnggotaLabels(int active, int total) {
-        lblAktif.setText(active + " Orang");
-        lblTotal.setText(total + " Orang");
+        if (lblAktif != null)
+            lblAktif.setText(active + " Orang");
+        if (lblTotal != null)
+            lblTotal.setText(total + " Orang");
     }
 
-    private void loadNearestSchedule() {
+    // PERUBAHAN PENTING: Method ini sekarang PUBLIC agar bisa dipanggil dari
+    // MainFrame/KegiatanPage
+    public void loadNearestSchedule() {
+        // Query ambil 1 kegiatan yang tanggalnya >= hari ini (opsional, disini ambil
+        // semua sort ASC)
         String sql = "SELECT nama_kegiatan, tanggal FROM kegiatan ORDER BY tanggal ASC LIMIT 1";
 
         try (Connection conn = DatabaseHelper.connect();
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 ResultSet rs = pstmt.executeQuery()) {
 
-            schedulePanel.removeAll(); // Bersihkan panel sebelum menambahkan konten baru
+            // Akses komponen di dalam panel schedule (parent dari schedulePanel)
+            // Karena schedulePanel kita buat ulang di createScheduleSection,
+            // Kita harus update komponen UI secara hati-hati.
+
+            // Cara yang lebih aman: Hapus isi schedulePanel (panel kecil penampung teks)
+            // dan isi ulang
+            // Tapi variabel schedulePanel di method createScheduleSection adalah lokal.
+            // Kita harus perbaiki variabel instance 'schedulePanel' di atas.
+
+            // Lihat metode createScheduleSection di bawah ini yang sudah diperbaiki.
+            if (schedulePanel == null)
+                return;
+
+            schedulePanel.removeAll();
 
             if (rs.next()) {
                 String namaKegiatan = rs.getString("nama_kegiatan");
                 String tanggal = rs.getString("tanggal");
 
-                // Format tanggal
-                SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); // Format sesuai dengan
-                                                                                            // database
-                SimpleDateFormat outputFormat = new SimpleDateFormat("EEEE, dd MMM yyyy • HH:mm"); // Format untuk
-                                                                                                   // ditampilkan
-                String formattedDate = outputFormat.format(inputFormat.parse(tanggal));
+                // Format tanggal (asumsi format DB yyyy-MM-dd HH:mm:ss atau yyyy-MM-dd)
+                String displayDate = tanggal;
+                try {
+                    SimpleDateFormat dbFmt = new SimpleDateFormat("yyyy-MM-dd"); // Sesuaikan dengan KegiatanPage
+                    SimpleDateFormat uiFmt = new SimpleDateFormat("EEEE, dd MMM yyyy");
+                    displayDate = uiFmt.format(dbFmt.parse(tanggal));
+                } catch (Exception e) {
+                } // Fallback jika format beda
 
-                // Update UI
+                JPanel info = new JPanel(new GridLayout(2, 1));
+                info.setOpaque(false);
+
                 JLabel title = new JLabel(namaKegiatan);
                 title.setFont(new Font("Segoe UI", Font.BOLD, 16));
                 title.setForeground(MainFrame.COL_PRIMARY);
 
-                JLabel date = new JLabel(formattedDate);
+                JLabel date = new JLabel(displayDate);
                 date.setFont(MainFrame.FONT_BODY);
 
-                JPanel info = new JPanel(new GridLayout(2, 1));
-                info.setOpaque(false);
                 info.add(title);
                 info.add(date);
 
-                schedulePanel.add(info, BorderLayout.SOUTH);
+                schedulePanel.add(info, BorderLayout.CENTER);
             } else {
-                // Jika tidak ada kegiatan
-                JLabel noSchedule = new JLabel("Tidak ada kegiatan yang dijadwalkan.");
-                noSchedule.setFont(new Font("Segoe UI", Font.ITALIC, 14));
-                noSchedule.setForeground(MainFrame.COL_TEXT_MUTED);
-                noSchedule.setHorizontalAlignment(SwingConstants.CENTER);
-
-                schedulePanel.add(noSchedule, BorderLayout.CENTER);
+                JLabel empty = new JLabel("Belum ada jadwal kegiatan.");
+                empty.setFont(MainFrame.FONT_BODY);
+                empty.setForeground(MainFrame.COL_TEXT_MUTED);
+                schedulePanel.add(empty, BorderLayout.CENTER);
             }
 
             schedulePanel.revalidate();
             schedulePanel.repaint();
+
         } catch (Exception e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Gagal memuat jadwal terdekat: " + e.getMessage());
         }
     }
 }
