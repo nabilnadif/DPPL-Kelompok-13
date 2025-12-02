@@ -2,6 +2,7 @@ package Auth;
 
 import Admin.MainFrame;
 import Utils.DatabaseHelper;
+import Utils.PasswordHelper;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -9,8 +10,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 
 public class RegistrasiPanel extends JPanel {
 
@@ -18,61 +17,84 @@ public class RegistrasiPanel extends JPanel {
     private JPanel main;
     private JTextField tNIM, tNama, tTelp, tEmail;
     private JPasswordField tPass;
-    private boolean isEdit = false;
 
     public RegistrasiPanel(JFrame frame, CardLayout cl, JPanel main) {
         this.cl = cl;
         this.main = main;
         setLayout(new BorderLayout());
 
+        // --- Panel Kiri (Branding/Info) ---
         JPanel left = new JPanel();
         left.setBackground(MainFrame.COL_SIDEBAR_BG);
         left.setLayout(new GridBagLayout());
         left.setPreferredSize(new Dimension(350, 0));
 
         JLabel brand = new JLabel(
-                "<html><center><h1>SISTEM UKM</h1><br>Bergabunglah bersama kami<br>dan kembangkan bakatmu.</center></html>");
-        brand.setForeground(Color.WHITE);
-        brand.setFont(MainFrame.FONT_BODY);
+                "<html><center><h1 style='color:white'>SISTEM UKM</h1><br><span style='color:#cbd5e1; font-size:11px'>Bergabunglah bersama kami<br>dan kembangkan bakatmu.</span></center></html>");
         left.add(brand);
 
+        // --- Panel Kanan (Formulir) ---
         JPanel right = new JPanel(new GridBagLayout());
         right.setBackground(Color.WHITE);
 
         JPanel form = new JPanel();
         form.setLayout(new BoxLayout(form, BoxLayout.Y_AXIS));
         form.setBackground(Color.WHITE);
-        form.setBorder(new EmptyBorder(20, 40, 20, 40));
+        form.setBorder(new EmptyBorder(20, 50, 20, 50));
 
         JLabel title = new JLabel("Registrasi Anggota");
         title.setFont(MainFrame.FONT_H1);
+        title.setForeground(MainFrame.COL_TEXT_DARK);
         title.setAlignmentX(LEFT_ALIGNMENT);
 
+        // Form Inputs
+        tNIM = addInput(form, "NIM (Username)");
+        tNama = addInput(form, "Nama Lengkap");
+        tTelp = addInput(form, "No. Telepon");
+        tEmail = addInput(form, "Email Universitas");
+
+        JLabel lPass = new JLabel("Password");
+        lPass.setFont(MainFrame.FONT_BOLD);
+        lPass.setAlignmentX(LEFT_ALIGNMENT);
+
+        tPass = new JPasswordField();
+        tPass.setFont(MainFrame.FONT_BODY);
+        tPass.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(203, 213, 225)),
+                new EmptyBorder(8, 10, 8, 10)));
+        tPass.setMaximumSize(new Dimension(400, 35));
+        tPass.setAlignmentX(LEFT_ALIGNMENT);
+
         JButton btnReg = MainFrame.createButton("Daftar Sekarang", MainFrame.COL_PRIMARY);
+        btnReg.setAlignmentX(LEFT_ALIGNMENT);
         btnReg.addActionListener(e -> handleRegistrasi());
 
-        JLabel back = new JLabel("Kembali ke Login");
+        JLabel back = new JLabel("Sudah punya akun? Login");
+        back.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         back.setForeground(MainFrame.COL_TEXT_MUTED);
         back.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        back.setAlignmentX(LEFT_ALIGNMENT);
         back.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
                 cl.show(main, AppFrame.PANEL_LOGIN);
             }
         });
 
+        // Add to Form Container
         form.add(Box.createVerticalStrut(20));
-        form.add(title); // Tambahkan judul terlebih dahulu
-        form.add(Box.createVerticalStrut(25)); // Tambahkan jarak setelah judul
-        tNIM = addInput(form, "NIM");
-        tNama = addInput(form, "Nama Lengkap");
-        tTelp = addInput(form, "No. Telepon");
-        tEmail = addInput(form, "Email");
-        form.add(Box.createVerticalStrut(20)); // Tambahkan jarak sebelum tombol
-        form.add(btnReg); // Tambahkan tombol registrasi
-        form.add(Box.createVerticalStrut(15)); // Tambahkan jarak sebelum link kembali
-        form.add(back); // Tambahkan link kembali ke login
+        form.add(title);
+        form.add(Box.createVerticalStrut(20));
+        // (Input fields added via helper above)
+        form.add(lPass);
+        form.add(Box.createVerticalStrut(5));
+        form.add(tPass);
+        form.add(Box.createVerticalStrut(25));
+        form.add(btnReg);
+        form.add(Box.createVerticalStrut(15));
+        form.add(back);
 
         right.add(form);
+
         add(left, BorderLayout.WEST);
         add(right, BorderLayout.CENTER);
     }
@@ -81,10 +103,11 @@ public class RegistrasiPanel extends JPanel {
         JLabel l = new JLabel(lbl);
         l.setFont(MainFrame.FONT_BOLD);
         l.setAlignmentX(Component.LEFT_ALIGNMENT);
-        JTextField t = MainFrame.createSearchField("");
+        JTextField t = MainFrame.createSearchField(""); // Reuse helper style
         t.setMaximumSize(new Dimension(400, 35));
         t.setAlignmentX(Component.LEFT_ALIGNMENT);
         p.add(l);
+        p.add(Box.createVerticalStrut(5));
         p.add(t);
         p.add(Box.createVerticalStrut(10));
         return t;
@@ -95,58 +118,58 @@ public class RegistrasiPanel extends JPanel {
         String nama = tNama.getText();
         String telp = tTelp.getText();
         String email = tEmail.getText();
+        String pass = new String(tPass.getPassword());
 
-        // Validasi data kosong
-        if (nim.isEmpty() || nama.isEmpty() || telp.isEmpty() || email.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Semua data wajib diisi!", "Error", JOptionPane.ERROR_MESSAGE);
+        if (nim.isEmpty() || nama.isEmpty() || pass.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Data wajib tidak boleh kosong!");
             return;
         }
 
-        // Query untuk menyimpan data anggota
+        // --- VALIDASI EMAIL ---
+        if (!email.contains("unri.ac.id")) {
+            JOptionPane.showMessageDialog(this,
+                    "Registrasi gagal!\nHanya email universitas (*.unri.ac.id) yang diperbolehkan.",
+                    "Email Tidak Valid",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        // ----------------------
+
+        // Hash Password
+        String hashedPass = PasswordHelper.hashPassword(pass);
+
+        String sqlUser = "INSERT INTO users(username, password, role, nama_lengkap) VALUES(?, ?, ?, ?)";
         String sqlAnggota = "INSERT INTO anggota(nim, nama, telepon, email, status) VALUES(?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseHelper.connect()) {
+            conn.setAutoCommit(false); // Start Transaction
 
-            if (!isEdit) {
-                // Cek apakah NIM sudah ada
-                String checkNimSql = "SELECT COUNT(*) FROM anggota WHERE nim = ?";
-                try (PreparedStatement checkNimStmt = conn.prepareStatement(checkNimSql)) {
-                    checkNimStmt.setString(1, nim);
-                    ResultSet rsNim = checkNimStmt.executeQuery();
-                    if (rsNim.next() && rsNim.getInt(1) > 0) {
-                        JOptionPane.showMessageDialog(this, "NIM sudah terdaftar!", "Error", JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
-                }
-
-                // Cek apakah email sudah ada
-                String checkEmailSql = "SELECT COUNT(*) FROM anggota WHERE email = ?";
-                try (PreparedStatement checkEmailStmt = conn.prepareStatement(checkEmailSql)) {
-                    checkEmailStmt.setString(1, email);
-                    ResultSet rsEmail = checkEmailStmt.executeQuery();
-                    if (rsEmail.next() && rsEmail.getInt(1) > 0) {
-                        JOptionPane.showMessageDialog(this, "Email sudah terdaftar!", "Error",
-                                JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
-                }
+            // 1. Insert User Login
+            try (PreparedStatement pstmt1 = conn.prepareStatement(sqlUser)) {
+                pstmt1.setString(1, nim); // Username = NIM
+                pstmt1.setString(2, hashedPass);
+                pstmt1.setString(3, "Anggota");
+                pstmt1.setString(4, nama);
+                pstmt1.executeUpdate();
             }
 
-            // Simpan data anggota dengan status "Belum Aktif"
-            try (PreparedStatement pstmt = conn.prepareStatement(sqlAnggota)) {
-                pstmt.setString(1, nim);
-                pstmt.setString(2, nama);
-                pstmt.setString(3, telp);
-                pstmt.setString(4, email);
-                pstmt.setString(5, "Belum Aktif"); // Status default
-                pstmt.executeUpdate();
+            // 2. Insert Data Anggota
+            try (PreparedStatement pstmt2 = conn.prepareStatement(sqlAnggota)) {
+                pstmt2.setString(1, nim);
+                pstmt2.setString(2, nama);
+                pstmt2.setString(3, telp);
+                pstmt2.setString(4, email);
+                pstmt2.setString(5, "Aktif");
+                pstmt2.executeUpdate();
             }
 
-            JOptionPane.showMessageDialog(this, "Registrasi Berhasil! Data Anda akan diverifikasi oleh Admin.");
-            cl.show(main, AppFrame.PANEL_LOGIN); // Kembali ke panel login
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Gagal Registrasi: " + e.getMessage(), "Error",
-                    JOptionPane.ERROR_MESSAGE);
+            conn.commit(); // Commit Transaction
+            JOptionPane.showMessageDialog(this, "Registrasi Berhasil! Silakan Login.");
+            cl.show(main, AppFrame.PANEL_LOGIN);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Gagal Registrasi: " + e.getMessage());
         }
     }
 }

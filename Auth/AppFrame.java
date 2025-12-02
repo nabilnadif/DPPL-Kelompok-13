@@ -13,24 +13,26 @@ public class AppFrame extends JFrame {
     private JPanel mainPanel;
 
     public AppFrame() {
-        setTitle("Sistem Pengelolaan UKM");
+        setTitle("Sistem Pengelolaan UKM - Akses Masuk");
         setSize(900, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        // Gunakan background modern
+        // Gunakan background modern dari MainFrame Admin
         getContentPane().setBackground(MainFrame.COL_CONTENT_BG);
 
         cardLayout = new CardLayout();
         mainPanel = new JPanel(cardLayout);
-        mainPanel.setOpaque(false); // Transparan agar bg terlihat
+        mainPanel.setOpaque(false); // Transparan agar background terlihat
 
+        // Inisialisasi Panel
         LoginPanel loginPanel = new LoginPanel(this, cardLayout, mainPanel);
         RegistrasiPanel registrasiPanel = new RegistrasiPanel(this, cardLayout, mainPanel);
 
         mainPanel.add(loginPanel, PANEL_LOGIN);
         mainPanel.add(registrasiPanel, PANEL_REGISTRASI);
 
+        // Tampilkan Login Dulu
         cardLayout.show(mainPanel, PANEL_LOGIN);
         add(mainPanel);
     }
