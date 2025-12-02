@@ -240,6 +240,24 @@ public class AnggotaPage extends JPanel {
             JOptionPane.showMessageDialog(this, "Nama dan NIM wajib diisi.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
+        String inputNIM = txtAnggotaNIM.getText().trim();
+
+        for (int i = 0; i < modelAnggota.getRowCount(); i++) {
+
+            if (isUpdateMode && i == editingRowIndex) {
+                continue;
+            }
+
+            String existingNIM = modelAnggota.getValueAt(i, 1).toString();
+
+            if (existingNIM.equalsIgnoreCase(inputNIM)) {
+                JOptionPane.showMessageDialog(this,
+                        "Gagal! Anggota dengan NIM " + inputNIM + " sudah terdaftar.",
+                        "Data Duplikat",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        }
 
         Object[] rowData = {
                 txtAnggotaNama.getText(),
