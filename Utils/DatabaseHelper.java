@@ -41,7 +41,8 @@ public class DatabaseHelper {
                 + "nama_kegiatan TEXT NOT NULL, "
                 + "tipe TEXT NOT NULL, "
                 + "lokasi TEXT, "
-                + "tanggal TEXT)";
+                + "tanggal TEXT, "
+                + "proposal_path TEXT)";
 
         String sqlPengumuman = "CREATE TABLE IF NOT EXISTS pengumuman ("
                 + "id INTEGER PRIMARY KEY AUTOINCREMENT, "

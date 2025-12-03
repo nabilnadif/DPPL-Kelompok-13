@@ -52,7 +52,7 @@ public class LoginPanel extends JPanel {
         sub.setAlignmentX(CENTER_ALIGNMENT);
 
         // Input Fields
-        tUser = MainFrame.createSearchField("Username / NIM");
+        tUser = MainFrame.createSearchField("Username / Email");
         tUser.setMaximumSize(new Dimension(300, 40));
 
         tPass = new JPasswordField();
