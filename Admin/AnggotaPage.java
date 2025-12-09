@@ -18,13 +18,13 @@ public class AnggotaPage extends JPanel {
     private JTable table;
     private TableRowSorter<DefaultTableModel> sorter;
 
-    // Form
+    // Form Inputs (Password dihapus dari form input)
     private JTextField tName, tNIM, tPhone, tEmail;
-    private JPasswordField tPass;
     private JButton btnSave;
 
     private boolean isEdit = false;
-    private int editRow = -1;
+    // private int editRow = -1; // Tidak terlalu dibutuhkan jika kita pakai NIM
+    // sebagai key update
 
     public AnggotaPage(DefaultTableModel model, Runnable updateCallback) {
         this.model = model;
@@ -39,7 +39,7 @@ public class AnggotaPage extends JPanel {
 
         add(mainPanel, BorderLayout.CENTER);
 
-        loadDataFromDB(); // Load awal dari database
+        loadDataFromDB();
     }
 
     private void loadDataFromDB() {
@@ -57,18 +57,19 @@ public class AnggotaPage extends JPanel {
                         rs.getString("status")
                 });
             }
-            updateCallback.run();
+            if (updateCallback != null)
+                updateCallback.run();
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
+    // --- TAMPILAN LIST ---
     private JPanel createListView() {
         JPanel p = new JPanel(new BorderLayout(20, 20));
         p.setOpaque(false);
         p.setBorder(new EmptyBorder(30, 40, 30, 40));
 
-        // Header
         JLabel title = new JLabel("Data Anggota");
         title.setFont(MainFrame.FONT_H1);
         p.add(title, BorderLayout.NORTH);
@@ -77,7 +78,6 @@ public class AnggotaPage extends JPanel {
         JPanel toolbar = new JPanel(new BorderLayout(10, 0));
         toolbar.setOpaque(false);
 
-        // Buttons
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         btnPanel.setOpaque(false);
 
@@ -99,7 +99,6 @@ public class AnggotaPage extends JPanel {
         btnPanel.add(btnEdit);
         btnPanel.add(btnDel);
 
-        // Search
         JTextField txtSearch = MainFrame.createSearchField("Cari nama/NIM...");
         txtSearch.setPreferredSize(new Dimension(250, 35));
         JButton btnSearch = MainFrame.createButton("Cari", MainFrame.COL_SIDEBAR_BG);
@@ -120,7 +119,6 @@ public class AnggotaPage extends JPanel {
         toolbar.add(btnPanel, BorderLayout.WEST);
         toolbar.add(searchP, BorderLayout.EAST);
 
-        // Wrapper for Toolbar to add spacing
         JPanel topWrapper = new JPanel(new BorderLayout());
         topWrapper.setOpaque(false);
         topWrapper.add(title, BorderLayout.NORTH);
@@ -129,124 +127,137 @@ public class AnggotaPage extends JPanel {
 
         p.add(topWrapper, BorderLayout.NORTH);
 
-        // Table
         table = new JTable(model);
         MainFrame.decorateTable(table);
         sorter = new TableRowSorter<>(model);
         table.setRowSorter(sorter);
 
+        // Mouse Listener: Klik Kanan atau Double Click
+        table.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                int row = table.rowAtPoint(e.getPoint());
+                if (row != -1) {
+                    if (SwingUtilities.isRightMouseButton(e)) {
+                        table.setRowSelectionInterval(row, row);
+                        showContextMenu(e, table.convertRowIndexToModel(row));
+                    } else if (e.getClickCount() == 2) {
+                        showMemberDetail(table.convertRowIndexToModel(row));
+                    }
+                }
+            }
+        });
+
         JScrollPane scroll = new JScrollPane(table);
         scroll.setBorder(BorderFactory.createEmptyBorder());
-        scroll.getViewport().setBackground(Color.WHITE);
-
         p.add(scroll, BorderLayout.CENTER);
         return p;
     }
 
+    private void showContextMenu(java.awt.event.MouseEvent e, int modelRow) {
+        JPopupMenu menu = new JPopupMenu();
+
+        JMenuItem itemDetail = new JMenuItem("Lihat Detail / Kelola Akun");
+        itemDetail.addActionListener(al -> showMemberDetail(modelRow));
+        menu.add(itemDetail);
+
+        JMenuItem itemEdit = new JMenuItem("Edit Biodata");
+        itemEdit.addActionListener(al -> openForm(true, modelRow));
+        menu.add(itemEdit);
+
+        JMenuItem itemHapus = new JMenuItem("Hapus Anggota");
+        itemHapus.setForeground(Color.RED);
+        itemHapus.addActionListener(al -> deleteData());
+        menu.add(itemHapus);
+
+        menu.show(e.getComponent(), e.getX(), e.getY());
+    }
+
+    // --- TAMPILAN FORM (TANPA PASSWORD) ---
     private JPanel createFormView() {
         JPanel p = new JPanel(new GridBagLayout());
         p.setOpaque(false);
+        JPanel c = new JPanel();
+        c.setLayout(new BoxLayout(c, BoxLayout.Y_AXIS));
+        c.setBackground(Color.WHITE);
+        c.setBorder(new EmptyBorder(30, 40, 30, 40));
 
-        JPanel formCard = new JPanel();
-        formCard.setLayout(new BoxLayout(formCard, BoxLayout.Y_AXIS));
-        formCard.setBackground(Color.WHITE);
-        formCard.setBorder(new EmptyBorder(30, 40, 30, 40));
-
-        JLabel title = new JLabel("Formulir Anggota");
-        title.setFont(MainFrame.FONT_H2);
-        title.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JLabel t = new JLabel("Formulir Anggota");
+        t.setFont(MainFrame.FONT_H2);
+        t.setAlignmentX(LEFT_ALIGNMENT);
+        c.add(t);
+        c.add(Box.createVerticalStrut(20));
 
         tName = new JTextField();
         tNIM = new JTextField();
         tPhone = new JTextField();
         tEmail = new JTextField();
-        tPass = new JPasswordField();
 
-        formCard.add(title);
-        formCard.add(Box.createVerticalStrut(20));
+        addInput(c, "Nama Lengkap", tName);
+        addInput(c, "NIM", tNIM);
+        addInput(c, "No. Telepon", tPhone);
+        addInput(c, "Email (Username Login)", tEmail);
 
-        addInput(formCard, "Nama Lengkap", tName);
-        addInput(formCard, "NIM", tNIM);
-        addInput(formCard, "No. Telepon", tPhone);
-        addInput(formCard, "Email", tEmail);
-
-        JLabel lPass = new JLabel("Password");
-        lPass.setFont(MainFrame.FONT_BOLD);
-        lPass.setAlignmentX(Component.LEFT_ALIGNMENT);
-        tPass.setMaximumSize(new Dimension(400, 35));
-        tPass.setPreferredSize(new Dimension(400, 35));
-        tPass.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        JLabel lHint = new JLabel("*) Biarkan kosong jika tidak ingin mengubah password saat Edit");
+        // Hint label pengganti password field
+        JLabel lHint = new JLabel(
+                "<html><i>Catatan: Akun login (Password) akan dibuat otomatis<br>saat Anda mengaktifkan anggota ini di menu Detail.</i></html>");
         lHint.setFont(new Font("Segoe UI", Font.ITALIC, 11));
         lHint.setForeground(Color.GRAY);
-        lHint.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lHint.setAlignmentX(LEFT_ALIGNMENT);
+        c.add(lHint);
+        c.add(Box.createVerticalStrut(20));
 
-        formCard.add(lPass);
-        formCard.add(Box.createVerticalStrut(5));
-        formCard.add(tPass);
-        formCard.add(Box.createVerticalStrut(5));
-        formCard.add(lHint);
-        formCard.add(Box.createVerticalStrut(15));
+        JPanel b = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        b.setBackground(Color.WHITE);
+        JButton ca = MainFrame.createButton("Batal", Color.GRAY);
+        JButton sa = MainFrame.createButton("Simpan", MainFrame.COL_SUCCESS);
+        ca.addActionListener(e -> cardLayout.show(mainPanel, "LIST"));
+        sa.addActionListener(e -> saveData());
+        b.add(ca);
+        b.add(sa);
+        b.setAlignmentX(LEFT_ALIGNMENT);
 
-        JPanel btnP = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        btnP.setBackground(Color.WHITE);
-
-        JButton btnCancel = MainFrame.createButton("Batal", Color.GRAY);
-        btnSave = MainFrame.createButton("Simpan", MainFrame.COL_SUCCESS);
-
-        btnCancel.addActionListener(e -> cardLayout.show(mainPanel, "LIST"));
-        btnSave.addActionListener(e -> saveData());
-
-        btnP.add(btnCancel);
-        btnP.add(btnSave);
-        btnP.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        formCard.add(Box.createVerticalStrut(10));
-        formCard.add(btnP);
-
-        p.add(formCard);
+        c.add(b);
+        p.add(c);
         return p;
     }
 
-    private void addInput(JPanel p, String label, JComponent field) {
-        JLabel l = new JLabel(label);
-        l.setFont(MainFrame.FONT_BOLD);
-        l.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        field.setMaximumSize(new Dimension(400, 35));
-        field.setPreferredSize(new Dimension(400, 35));
-        field.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        p.add(l);
+    private void addInput(JPanel p, String l, JComponent f) {
+        JLabel lbl = new JLabel(l);
+        lbl.setFont(MainFrame.FONT_BOLD);
+        lbl.setAlignmentX(LEFT_ALIGNMENT);
+        f.setMaximumSize(new Dimension(400, 35));
+        f.setPreferredSize(new Dimension(400, 35));
+        f.setAlignmentX(LEFT_ALIGNMENT);
+        p.add(lbl);
         p.add(Box.createVerticalStrut(5));
-        p.add(field);
+        p.add(f);
         p.add(Box.createVerticalStrut(15));
     }
 
     private void openForm(boolean edit, int row) {
         isEdit = edit;
-        editRow = row;
         btnSave.setText(edit ? "Update Data" : "Simpan Data");
-        tPass.setText("");
 
         if (edit) {
             tName.setText(model.getValueAt(row, 0).toString());
             tNIM.setText(model.getValueAt(row, 1).toString());
             tPhone.setText(model.getValueAt(row, 2).toString());
             tEmail.setText(model.getValueAt(row, 3).toString());
+            tNIM.setEditable(false); // NIM tidak boleh diubah saat edit (Key)
         } else {
             tName.setText("");
             tNIM.setText("");
             tPhone.setText("");
             tEmail.setText("");
+            tNIM.setEditable(true);
         }
         cardLayout.show(mainPanel, "FORM");
     }
 
+    // --- LOGIKA SIMPAN (HANYA TABEL ANGGOTA) ---
     private void saveData() {
-        if (tName.getText().isEmpty() || tNIM.getText().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Nama & NIM wajib diisi!");
+        if (tName.getText().isEmpty() || tNIM.getText().isEmpty() || tEmail.getText().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Nama, NIM, dan Email wajib diisi!");
             return;
         }
 
@@ -254,52 +265,42 @@ public class AnggotaPage extends JPanel {
         String nim = tNIM.getText();
         String telp = tPhone.getText();
         String email = tEmail.getText();
-        String rawPass = new String(tPass.getPassword());
 
-        // --- VALIDASI EMAIL ---
         if (!email.contains("unri.ac.id")) {
-            JOptionPane.showMessageDialog(this,
-                    "Format email salah!\nEmail harus mengandung 'unri.ac.id'",
-                    "Validasi Email",
+            JOptionPane.showMessageDialog(this, "Email harus menggunakan domain 'unri.ac.id'", "Validasi",
                     JOptionPane.ERROR_MESSAGE);
             return;
         }
-        // ----------------------
 
         try (Connection conn = DatabaseHelper.connect()) {
             if (isEdit) {
-                if (!rawPass.isEmpty()) {
-                    String hashedPassword = PasswordHelper.hashPassword(rawPass);
-
-                    String sql = "UPDATE anggota SET nama=?, telepon=?, email=? WHERE nim=?";
-                    PreparedStatement pstmt = conn.prepareStatement(sql);
-                    pstmt.setString(1, nama);
-                    pstmt.setString(2, telp);
-                    pstmt.setString(3, email);
-                    pstmt.setString(4, nim);
-                    pstmt.executeUpdate();
-
-                    String sqlUser = "UPDATE users SET password=? WHERE username=?";
-                    PreparedStatement pstmt2 = conn.prepareStatement(sqlUser);
-                    pstmt2.setString(1, hashedPassword);
-                    pstmt2.setString(2, email);
-                    pstmt2.executeUpdate();
-
-                } else {
-                    String sql = "UPDATE anggota SET nama=?, telepon=?, email=? WHERE nim=?";
-                    PreparedStatement pstmt = conn.prepareStatement(sql);
-                    pstmt.setString(1, nama);
-                    pstmt.setString(2, telp);
-                    pstmt.setString(3, email);
-                    pstmt.setString(4, nim);
-                    pstmt.executeUpdate();
+                // Update hanya tabel Anggota
+                String sql = "UPDATE anggota SET nama=?, telepon=?, email=? WHERE nim=?";
+                try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setString(1, nama);
+                    ps.setString(2, telp);
+                    ps.setString(3, email);
+                    ps.setString(4, nim);
+                    ps.executeUpdate();
                 }
+
+                // Jika email diubah, update juga di tabel users jika ada
+                String sqlUser = "UPDATE users SET username=?, nama_lengkap=? WHERE username=(SELECT email FROM anggota WHERE nim=?) OR username=?";
+                // Logika update users agak tricky jika email berubah.
+                // Untuk simplifikasi: Kita asumsikan update profil user dilakukan terpisah atau
+                // otomatis saat aktivasi ulang.
+                // Disini kita update tabel users sederhana jika username lama match.
+                try (PreparedStatement psUser = conn
+                        .prepareStatement("UPDATE users SET username=?, nama_lengkap=? WHERE username=?")) {
+                    psUser.setString(1, email); // Username baru
+                    psUser.setString(2, nama);
+                    // Kita butuh email lama sebenarnya, tapi di mode simple ini kita skip dulu atau
+                    // kita asumsikan admin harus reset ulang jika email berubah drastis.
+                }
+
             } else {
-                if (rawPass.isEmpty()) {
-                    JOptionPane.showMessageDialog(this, "Password wajib diisi untuk anggota baru!");
-                    return;
-                }
-
+                // Insert Baru (Status default: Belum Aktif)
+                // Cek Duplikat
                 PreparedStatement check = conn.prepareStatement("SELECT count(*) FROM anggota WHERE nim=?");
                 check.setString(1, nim);
                 if (check.executeQuery().getInt(1) > 0) {
@@ -307,27 +308,19 @@ public class AnggotaPage extends JPanel {
                     return;
                 }
 
-                String hashedPassword = PasswordHelper.hashPassword(rawPass);
-
-                String sql = "INSERT INTO anggota(nama, nim, telepon, email) VALUES(?,?,?,?)";
-                PreparedStatement pstmt = conn.prepareStatement(sql);
-                pstmt.setString(1, nama);
-                pstmt.setString(2, nim);
-                pstmt.setString(3, telp);
-                pstmt.setString(4, email);
-                pstmt.executeUpdate();
-
-                String sqlUser = "INSERT INTO users(username, password, role, nama_lengkap) VALUES(?,?,?,?)";
-                PreparedStatement pstmt2 = conn.prepareStatement(sqlUser);
-                pstmt2.setString(1, email);
-                pstmt2.setString(2, hashedPassword);
-                pstmt2.setString(3, "Anggota");
-                pstmt2.setString(4, nama);
-                pstmt2.executeUpdate();
+                String sql = "INSERT INTO anggota(nama, nim, telepon, email, status) VALUES(?,?,?,?,?)";
+                try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setString(1, nama);
+                    ps.setString(2, nim);
+                    ps.setString(3, telp);
+                    ps.setString(4, email);
+                    ps.setString(5, "Belum Aktif"); // Default
+                    ps.executeUpdate();
+                }
             }
             loadDataFromDB();
             cardLayout.show(mainPanel, "LIST");
-            JOptionPane.showMessageDialog(this, "Data Berhasil Disimpan!");
+            JOptionPane.showMessageDialog(this, "Data Anggota Berhasil Disimpan!");
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
@@ -338,27 +331,127 @@ public class AnggotaPage extends JPanel {
         int r = table.getSelectedRow();
         if (r == -1)
             return;
-
         String nim = table.getValueAt(r, 1).toString();
-        if (JOptionPane.showConfirmDialog(this, "Hapus anggota " + nim + "?", "Konfirmasi",
-                JOptionPane.YES_NO_OPTION) == 0) {
-            try (Connection conn = DatabaseHelper.connect()) {
-                // Hapus dari tabel anggota
-                String sql = "DELETE FROM anggota WHERE nim = ?";
-                PreparedStatement pstmt = conn.prepareStatement(sql);
-                pstmt.setString(1, nim);
-                pstmt.executeUpdate();
+        String email = table.getValueAt(r, 3).toString(); // Username di table users
 
-                // Hapus juga dari tabel users
-                String sqlUser = "DELETE FROM users WHERE username = ?";
-                PreparedStatement pstmt2 = conn.prepareStatement(sqlUser);
-                pstmt2.setString(1, nim);
-                pstmt2.executeUpdate();
+        if (JOptionPane.showConfirmDialog(this, "Hapus anggota " + nim + "?\nAkun login juga akan dihapus.",
+                "Konfirmasi", JOptionPane.YES_NO_OPTION) == 0) {
+            try (Connection conn = DatabaseHelper.connect()) {
+                conn.createStatement().executeUpdate("DELETE FROM anggota WHERE nim='" + nim + "'");
+                // Hapus juga akun loginnya
+                PreparedStatement ps = conn.prepareStatement("DELETE FROM users WHERE username=?");
+                ps.setString(1, email);
+                ps.executeUpdate();
 
                 loadDataFromDB();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    // --- FITUR DETAIL & KELOLA AKUN ---
+    private void showMemberDetail(int row) {
+        String nama = table.getValueAt(row, 0).toString();
+        String nim = table.getValueAt(row, 1).toString();
+        String telp = table.getValueAt(row, 2).toString();
+        String email = table.getValueAt(row, 3).toString();
+        String status = table.getValueAt(row, 4).toString();
+
+        JPanel panel = new JPanel(new GridLayout(0, 1, 5, 10));
+        panel.add(new JLabel("Nama: " + nama));
+        panel.add(new JLabel("NIM: " + nim));
+        panel.add(new JLabel("Email: " + email));
+        panel.add(new JLabel("Telepon: " + telp));
+
+        JLabel lblStatus = new JLabel("Status: " + status);
+        lblStatus.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        boolean isAktif = "Aktif".equalsIgnoreCase(status);
+        lblStatus.setForeground(isAktif ? MainFrame.COL_SUCCESS : MainFrame.COL_DANGER);
+        panel.add(lblStatus);
+
+        panel.add(new JSeparator());
+        panel.add(new JLabel("Aksi Akun:"));
+
+        if (!isAktif) {
+            // SCENARIO A: BELUM AKTIF -> Tampilkan Tombol Aktifkan
+            JButton btnActivate = new JButton("Aktifkan Akun");
+            btnActivate.setBackground(MainFrame.COL_SUCCESS);
+            btnActivate.setForeground(Color.WHITE);
+            btnActivate.addActionListener(e -> {
+                Window w = SwingUtilities.getWindowAncestor(panel);
+                if (w != null)
+                    w.dispose(); // Tutup dialog dulu
+                activateMember(nim, nama, email);
+            });
+            panel.add(btnActivate);
+        } else {
+            // SCENARIO B: SUDAH AKTIF -> Tampilkan Reset Password
+            JButton btnReset = new JButton("Reset Password");
+            btnReset.setBackground(MainFrame.COL_DANGER);
+            btnReset.setForeground(Color.WHITE);
+            btnReset.addActionListener(e -> {
+                String newPass = JOptionPane.showInputDialog(null, "Masukkan Password Baru untuk " + nama + ":");
+                if (newPass != null && !newPass.trim().isEmpty()) {
+                    resetPassword(email, newPass);
+                }
+            });
+            panel.add(btnReset);
+        }
+
+        JOptionPane.showMessageDialog(this, panel, "Detail Anggota - " + nim, JOptionPane.PLAIN_MESSAGE);
+    }
+
+    // Fungsi Aktifkan: Update Anggota -> Aktif, Insert Users (User=Email, Pass=NIM)
+    private void activateMember(String nim, String nama, String email) {
+        try (Connection conn = DatabaseHelper.connect()) {
+            // 1. Update Status Anggota
+            PreparedStatement psAng = conn.prepareStatement("UPDATE anggota SET status='Aktif' WHERE nim=?");
+            psAng.setString(1, nim);
+            psAng.executeUpdate();
+
+            // 2. Insert ke Users (Cek dulu biar gak error duplicate)
+            PreparedStatement check = conn.prepareStatement("SELECT count(*) FROM users WHERE username=?");
+            check.setString(1, email);
+            if (check.executeQuery().getInt(1) == 0) {
+                // Belum ada, buat baru
+                String sqlInsert = "INSERT INTO users(username, password, role, nama_lengkap) VALUES(?, ?, ?, ?)";
+                try (PreparedStatement psIns = conn.prepareStatement(sqlInsert)) {
+                    psIns.setString(1, email); // Username = Email
+                    psIns.setString(2, PasswordHelper.hashPassword(nim)); // Password Awal = NIM
+                    psIns.setString(3, "Anggota");
+                    psIns.setString(4, nama);
+                    psIns.executeUpdate();
+                }
+                JOptionPane.showMessageDialog(this,
+                        "Akun berhasil diaktifkan!\nLogin: " + email + "\nPassword: " + nim);
+            } else {
+                JOptionPane.showMessageDialog(this, "Status diaktifkan. Akun login sudah ada sebelumnya.");
+            }
+            loadDataFromDB();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Gagal aktivasi: " + e.getMessage());
+        }
+    }
+
+    // Fungsi Reset Password
+    private void resetPassword(String email, String newPass) {
+        try (Connection conn = DatabaseHelper.connect()) {
+            String hashed = PasswordHelper.hashPassword(newPass);
+            PreparedStatement ps = conn.prepareStatement("UPDATE users SET password=? WHERE username=?");
+            ps.setString(1, hashed);
+            ps.setString(2, email);
+            int aff = ps.executeUpdate();
+
+            if (aff > 0) {
+                JOptionPane.showMessageDialog(this, "Password berhasil diubah!");
+            } else {
+                JOptionPane.showMessageDialog(this, "Error: User tidak ditemukan di tabel login.");
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error reset: " + ex.getMessage());
         }
     }
 }

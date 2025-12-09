@@ -33,7 +33,7 @@ public class DatabaseHelper {
                 + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + "nama_transaksi TEXT NOT NULL, "
                 + "tipe TEXT NOT NULL, "
-                + "jumlah BIGINT NOT NULL, " // Simpan angka murni
+                + "jumlah BIGINT NOT NULL, "
                 + "pencatat TEXT)";
 
         String sqlKegiatan = "CREATE TABLE IF NOT EXISTS kegiatan ("
